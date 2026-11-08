@@ -11,6 +11,7 @@ class UNiagaraSystem;
 class UInputMappingContext;
 class UInputAction;
 class UPathFollowingComponent;
+class UCyberBeatLevelSelectWidget;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -60,6 +61,16 @@ protected:
 
 	/** Time that the click input has been pressed */
 	float FollowTime = 0.0f;
+
+	// UI initialization
+	virtual void BeginPlay() override;
+
+	// Level selection widget
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UCyberBeatLevelSelectWidget> LevelSelectWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UCyberBeatLevelSelectWidget> LevelSelectWidget;
 
 public:
 

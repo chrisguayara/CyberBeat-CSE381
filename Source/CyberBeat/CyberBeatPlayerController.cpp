@@ -13,6 +13,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "CyberBeat.h"
+#include "CyberBeatLevelSelectWidget.h"
 
 ACyberBeatPlayerController::ACyberBeatPlayerController()
 {
@@ -27,6 +28,46 @@ ACyberBeatPlayerController::ACyberBeatPlayerController()
 	DefaultMouseCursor = EMouseCursor::Default;
 	CachedDestination = FVector::ZeroVector;
 	FollowTime = 0.f;
+}
+
+void ACyberBeatPlayerController::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Check if this is the main menu
+	if (GetWorld()->GetMapName().Contains(TEXT("MainMenu")))
+	{
+		// Show level selection menu
+		if ( LevelSelectWidgetClass)
+		{
+			LevelSelectWidget = CreateWidget<UCyberBeatLevelSelectWidget>(
+				this,
+				LevelSelectWidgetClass
+			);
+
+			if (LevelSelectWidget)
+			{
+				LevelSelectWidget->AddToViewport();
+
+				bShowMouseCursor = true;
+
+				FInputModeUIOnly InputMode;
+				InputMode.SetWidgetToFocus(LevelSelectWidget->TakeWidget());
+
+				SetInputMode(InputMode);
+			}
+		}
+	}
+	else
+	{
+		// Restore mouse controls
+		bShowMouseCursor = true;
+
+		FInputModeGameOnly InputMode;
+		SetInputMode(InputMode);
+	}
+
+	
 }
 
 void ACyberBeatPlayerController::SetupInputComponent()
