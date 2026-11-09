@@ -11,8 +11,8 @@
  *  Sets the default gameplay framework classes
  *  Check the Blueprint derived class for the set values
  */
-UCLASS(abstract)
-class ACyberBeatGameMode : public AGameModeBase
+UCLASS()
+class CYBERBEAT_API ACyberBeatGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 
@@ -20,6 +20,25 @@ public:
 
 	/** Constructor */
 	ACyberBeatGameMode();
+
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Progression")
+    TArray<FName> Levels;
+  
+    UPROPERTY(BlueprintReadOnly, Category = "Level Progression")
+    int32 CurrentLevel = 0;
+
+
+    UFUNCTION(BlueprintCallable, Category = "Level Progression")
+    void LoadLevel(int32 LevelIndex);
+
+  
+    UFUNCTION(BlueprintCallable, Category = "Level Progression")
+    void LoadNextLevel();
+
+
+    UFUNCTION(BlueprintCallable, Category = "Level Progression")
+    void ReturnToMainMenu();
 };
 
 
