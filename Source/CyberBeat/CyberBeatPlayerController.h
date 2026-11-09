@@ -72,6 +72,14 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UCyberBeatLevelSelectWidget> LevelSelectWidget;
 
+	UPROPERTY(EditAnywhere, Category = "Track") float TrackRadius = 1200.f;
+    UPROPERTY(EditAnywhere, Category = "Track") FVector TrackCenter = FVector::ZeroVector;
+    UPROPERTY(EditAnywhere, Category = "Track") float LaneYawOffset = 0.f;
+    UPROPERTY(EditAnywhere, Category = "Track") float TurnSpeed = 720.f;
+
+    float CurrentAngle = 0.f;
+    float TargetAngle = 0.f;
+
 public:
 
 	/** Constructor */

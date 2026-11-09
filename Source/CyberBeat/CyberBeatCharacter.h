@@ -16,7 +16,25 @@ UCLASS(abstract)
 class ACyberBeatCharacter : public ACharacter
 {
 	GENERATED_BODY()
+protected:
 
+	UPROPERTY(EditAnywhere, Category = "Track")
+    float TrackRadius = 1200.f;
+
+    UPROPERTY(EditAnywhere, Category = "Track")
+    FVector TrackCenter = FVector::ZeroVector;
+
+    /** Adjust in steps of 45 if a key sends you to the wrong lane. */
+    UPROPERTY(EditAnywhere, Category = "Track")
+    float LaneYawOffset = 0.f;
+
+    /** Degrees per second. High = nearly instant lane changes. */
+    UPROPERTY(EditAnywhere, Category = "Track")
+    float TurnSpeed = 720.f;
+
+    float CurrentAngle = 0.f;
+    float TargetAngle = 0.f;
+	
 private:
 
 	/** Top down camera */
