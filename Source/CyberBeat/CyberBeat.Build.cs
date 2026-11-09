@@ -20,8 +20,9 @@ public class CyberBeat : ModuleRules
 			"GameplayStateTreeModule",
 			"Niagara",
 			"UMG",
-			"Slate"
-		});
+			"Slate",
+            "AudioMixer"
+        });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 

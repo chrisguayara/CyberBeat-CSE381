@@ -19,7 +19,7 @@ class ACyberBeatCharacter : public ACharacter
 protected:
 
 	UPROPERTY(EditAnywhere, Category = "Track")
-    float TrackRadius = 1200.f;
+    float TrackRadius = 500.f;
 
     UPROPERTY(EditAnywhere, Category = "Track")
     FVector TrackCenter = FVector::ZeroVector;

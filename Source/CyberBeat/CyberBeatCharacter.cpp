@@ -67,8 +67,18 @@ void ACyberBeatCharacter::Tick(float DeltaSeconds)
 	const APlayerController* PC = Cast<APlayerController>(GetController());
 	if (!PC) return;
 
-	const float X = (PC->IsInputKeyDown(EKeys::W) ? 1.f : 0.f) - (PC->IsInputKeyDown(EKeys::S) ? 1.f : 0.f);
-	const float Y = (PC->IsInputKeyDown(EKeys::D) ? 1.f : 0.f) - (PC->IsInputKeyDown(EKeys::A) ? 1.f : 0.f);
+	const bool bW = PC->IsInputKeyDown(EKeys::W);
+	const bool bA = PC->IsInputKeyDown(EKeys::A);
+	const bool bS = PC->IsInputKeyDown(EKeys::S);
+	const bool bD = PC->IsInputKeyDown(EKeys::D);
+
+	float X = 0.f;
+	float Y = 0.f;
+
+	if (bW) X += 1.f;
+	if (bS) X -= 1.f;
+	if (bD) Y += 1.f;
+	if (bA) Y -= 1.f;
 
 	if (X != 0.f || Y != 0.f)
 	{
