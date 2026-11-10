@@ -15,6 +15,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+#include "Engine/Engine.h"
 
 ACyberBeatCharacter::ACyberBeatCharacter()
 {
@@ -152,18 +153,24 @@ void ACyberBeatCharacter::TryAttack()
 		UE_LOG(LogTemp, Warning,
 			TEXT("Perfect, Timing offset: %.1f ms"),
 			TimingOffset);
+		GEngine->AddOnScreenDebugMessage(
+			-1,1.0f,FColor::Yellow,TEXT("PERFECT!"));
 		break;
 
 	case EBeatTimingResult::Good:
 		UE_LOG(LogTemp, Warning,
 			TEXT("Good, Timing offset: %.1f ms"),
 			TimingOffset);
+		GEngine->AddOnScreenDebugMessage(
+			-1, 1.0f, FColor::Yellow, TEXT("GOOD!"));
 		break;
 
 	case EBeatTimingResult::Miss:
 		UE_LOG(LogTemp, Error,
 			TEXT("Miss, Timing offset: %.1f ms"),
 			TimingOffset);
+		GEngine->AddOnScreenDebugMessage(
+			-1, 1.0f, FColor::Yellow, TEXT("MISS!"));
 		break;
 	}
 }
