@@ -28,5 +28,5 @@ void UCyberBeatLevelSelectWidget::LoadLevel1()
 void UCyberBeatLevelSelectWidget::LoadLevel2()
 {
 
-	UGameplayStatics::OpenLevel(this, FName("Level2"));
+	UGameplayStatics::OpenLevel(this, FName("Lvl_TopDown2"));
 }
