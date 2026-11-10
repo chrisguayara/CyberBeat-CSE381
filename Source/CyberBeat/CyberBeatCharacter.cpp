@@ -125,7 +125,7 @@ void ACyberBeatCharacter::Tick(float DeltaSeconds)
 			TimingBar += TEXT("]");
 
 			FString IndicatorText = FString::Printf(
-				TEXT("NEXT BEAT  %s  BPM: %.0f"),*TimingBar,BPM);
+				TEXT("NEXT BEAT  %s "),*TimingBar);
 
 			GEngine->AddOnScreenDebugMessage(9001,0.1f,FColor::Cyan,IndicatorText);
 		}
