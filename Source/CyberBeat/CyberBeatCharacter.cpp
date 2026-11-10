@@ -54,7 +54,19 @@ void ACyberBeatCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	MusicManager = Cast<ACyberBeatMusicManager>(
+		UGameplayStatics::GetActorOfClass(
+			GetWorld(),
+			ACyberBeatMusicManager::StaticClass()
+		)
+	);
+
+	if (MusicManager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Music Manager exists"));
+	}
 	
+
 
 	GetCharacterMovement()->SetMovementMode(MOVE_None);   
 
@@ -73,6 +85,16 @@ void ACyberBeatCharacter::Tick(float DeltaSeconds)
 	const bool bA = PC->IsInputKeyDown(EKeys::A);
 	const bool bS = PC->IsInputKeyDown(EKeys::S);
 	const bool bD = PC->IsInputKeyDown(EKeys::D);
+
+	const bool bAttack = PC->IsInputKeyDown(EKeys::LeftMouseButton);
+	const bool bNewAttack = bAttack && !bAttackWasDown;
+
+	bAttackWasDown = bAttack;
+
+	if (bNewAttack)
+	{
+		TryAttack();
+	}
 
 	const bool bNewW = bW && !bWWasDown;
 	const bool bNewA = bA && !bAWasDown;
@@ -108,7 +130,36 @@ void ACyberBeatCharacter::Tick(float DeltaSeconds)
 	SetActorRotation(FRotator(0.f, CurrentAngle, 0.f));
 }
 
-void TestRhythmInput()
+void ACyberBeatCharacter::TryAttack()
 {
+	if (!MusicManager)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Music Manager is missing"));
+		return;
+	}
 
+	float TimingOffset = 0.0f;
+
+	EBeatTimingResult Result = MusicManager->JudgeInput(TimingOffset);
+
+	switch (Result)
+	{
+	case EBeatTimingResult::Perfect:
+		UE_LOG(LogTemp, Warning,
+			TEXT("Perfect, Timing offset: %.1f ms"),
+			TimingOffset);
+		break;
+
+	case EBeatTimingResult::Good:
+		UE_LOG(LogTemp, Warning,
+			TEXT("Good, Timing offset: %.1f ms"),
+			TimingOffset);
+		break;
+
+	case EBeatTimingResult::Miss:
+		UE_LOG(LogTemp, Error,
+			TEXT("Miss, Timing offset: %.1f ms"),
+			TimingOffset);
+		break;
+	}
 }

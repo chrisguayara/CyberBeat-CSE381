@@ -68,9 +68,9 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Timing",
         meta = (ClampMin = "0.0"))
-    float PerfectWindowMs = 50.0f;
+    float PerfectWindowMs = 75.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Timing",
         meta = (ClampMin = "0.0"))
-    float GoodWindowMs = 120.0f;
+    float GoodWindowMs = 150.0f;
 };

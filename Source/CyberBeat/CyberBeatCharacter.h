@@ -8,7 +8,7 @@
 
 class UCameraComponent;
 class USpringArmComponent;
-
+class ACyberBeatMusicManager;
 /**
  *  A controllable top-down perspective character
  */
@@ -40,6 +40,12 @@ protected:
 	bool bAWasDown = false;
 	bool bSWasDown = false;
 	bool bDWasDown = false;
+
+
+	UPROPERTY()
+	TObjectPtr<ACyberBeatMusicManager> MusicManager;
+
+	bool bAttackWasDown = false;
 	
 private:
 
@@ -62,13 +68,15 @@ public:
 	/** Update */
 	virtual void Tick(float DeltaSeconds) override;
 
-	void TestRhythmInput();
+	
 
 	/** Returns the camera component **/
 	UCameraComponent* GetTopDownCameraComponent() const { return TopDownCameraComponent.Get(); }
 
 	/** Returns the Camera Boom component **/
 	USpringArmComponent* GetCameraBoom() const { return CameraBoom.Get(); }
+
+	void TryAttack();
 
 };
 
