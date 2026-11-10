@@ -61,9 +61,11 @@ void ACyberBeatPlayerController::BeginPlay()
 	else
 	{
 		// Restore mouse controls
-		bShowMouseCursor = true;
+		bShowMouseCursor = false;
 
-		FInputModeGameOnly InputMode;
+		FInputModeGameAndUI InputMode;
+		InputMode.SetHideCursorDuringCapture(false);
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		SetInputMode(InputMode);
 	}
 

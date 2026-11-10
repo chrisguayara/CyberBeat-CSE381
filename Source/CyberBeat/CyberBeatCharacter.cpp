@@ -13,6 +13,8 @@
 #include "InputCoreTypes.h"
 #include "CyberBeatMusicManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 
 ACyberBeatCharacter::ACyberBeatCharacter()
 {
@@ -132,6 +134,8 @@ void ACyberBeatCharacter::Tick(float DeltaSeconds)
 
 void ACyberBeatCharacter::TryAttack()
 {
+	PlayAttackEffect();
+
 	if (!MusicManager)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Music Manager is missing"));
@@ -162,4 +166,23 @@ void ACyberBeatCharacter::TryAttack()
 			TimingOffset);
 		break;
 	}
+}
+
+void ACyberBeatCharacter::PlayAttackEffect()
+{
+	if (!AttackSlashEffect)
+	{
+		return;
+	}
+
+	FVector Forward = GetActorForwardVector();
+
+	FVector SpawnLocation = GetActorLocation() + Forward * 120.0f;
+	SpawnLocation.Z += 80.0f;
+
+	FRotator SpawnRotation = GetActorRotation();
+
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		GetWorld(),AttackSlashEffect,SpawnLocation,SpawnRotation,FVector(1.0f),true,true,ENCPoolMethod::None);
+
 }

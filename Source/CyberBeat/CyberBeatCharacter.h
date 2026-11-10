@@ -4,7 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "NiagaraSystem.h"
 #include "CyberBeatCharacter.generated.h"
+
+
+
 
 class UCameraComponent;
 class USpringArmComponent;
@@ -46,6 +50,11 @@ protected:
 	TObjectPtr<ACyberBeatMusicManager> MusicManager;
 
 	bool bAttackWasDown = false;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	TObjectPtr<UNiagaraSystem> AttackSlashEffect;
+
+
 	
 private:
 
@@ -77,6 +86,6 @@ public:
 	USpringArmComponent* GetCameraBoom() const { return CameraBoom.Get(); }
 
 	void TryAttack();
-
+	void PlayAttackEffect();
 };
 
