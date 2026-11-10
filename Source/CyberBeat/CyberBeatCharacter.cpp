@@ -84,6 +84,53 @@ void ACyberBeatCharacter::Tick(float DeltaSeconds)
 	const APlayerController* PC = Cast<APlayerController>(GetController());
 	if (!PC) return;
 
+	// Update on-screen beat indicator
+	if (MusicManager && GEngine)
+	{
+		const float BPM = MusicManager->GetBPM();
+		const float SongTime = MusicManager->GetSongTimeSeconds();
+
+		if (BPM > 0.0f)
+		{
+		
+			float BeatProgress = FMath::Fmod(SongTime * BPM / 60.0f,1.0f);
+
+			if (BeatProgress < 0.0f)
+			{
+				BeatProgress += 1.0f;
+			}
+
+			// Move indicator toward the center
+			const int32 MarkerPosition = FMath::Clamp(
+				FMath::RoundToInt(BeatProgress * 10.0f),0,10);
+
+			FString TimingBar = TEXT("[");
+
+			for (int32 i = 0; i <= 20; i++)
+			{
+				if (i == MarkerPosition)
+				{
+					TimingBar += TEXT("O");
+				}
+				else if (i == 10)
+				{
+					TimingBar += TEXT("|");
+				}
+				else
+				{
+					TimingBar += TEXT("-");
+				}
+			}
+
+			TimingBar += TEXT("]");
+
+			FString IndicatorText = FString::Printf(
+				TEXT("NEXT BEAT  %s  BPM: %.0f"),*TimingBar,BPM);
+
+			GEngine->AddOnScreenDebugMessage(9001,0.1f,FColor::Cyan,IndicatorText);
+		}
+	}
+
 	const bool bW = PC->IsInputKeyDown(EKeys::W);
 	const bool bA = PC->IsInputKeyDown(EKeys::A);
 	const bool bS = PC->IsInputKeyDown(EKeys::S);
