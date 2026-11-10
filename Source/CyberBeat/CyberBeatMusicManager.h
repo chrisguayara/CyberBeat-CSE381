@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Sound/QuartzQuantizationUtilities.h"
+#include "CyberBeatSongData.h"
 #include "CyberBeatMusicManager.generated.h"
 
 class USoundBase;
@@ -33,14 +34,19 @@ public:
     int32 GetCurrentBeat() const { return CurrentBeat; }
 
     UFUNCTION(BlueprintPure, Category = "Music Manager")
-    float GetBPM() const { return BPM; }
+    float GetBPM() const { return SongData ? SongData->BPM : 0.0f; }
+
+    UFUNCTION(BlueprintPure, Category = "Music Manager")
+    float GetSongTimeSeconds() const;
+
+    UFUNCTION(BlueprintCallable, Category = "Music Manager")
+    EBeatTimingResult JudgeInput(float& TimingOffset) const;
+
 
 protected:
-    UPROPERTY(EditAnywhere, Category = "Music")
-    TObjectPtr<USoundBase> MusicTrack;
 
-    UPROPERTY(EditAnywhere, Category = "Music", meta = (ClampMin = "1.0"))
-    float BPM = 120.f;
+    UPROPERTY(EditAnywhere, Category = "Music")
+    TObjectPtr<UCyberBeatSongData> SongData;
 
     UPROPERTY(EditAnywhere, Category = "Music")
     bool bStartMusicAutomatically = true;
@@ -59,4 +65,6 @@ private:
     TObjectPtr<UQuartzClockHandle> ClockHandle;
 
     int32 CurrentBeat = 0;
+
+    double MusicStartTime = 0.0;
 };

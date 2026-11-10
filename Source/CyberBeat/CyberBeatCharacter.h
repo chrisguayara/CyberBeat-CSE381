@@ -62,6 +62,8 @@ public:
 	/** Update */
 	virtual void Tick(float DeltaSeconds) override;
 
+	void TestRhythmInput();
+
 	/** Returns the camera component **/
 	UCameraComponent* GetTopDownCameraComponent() const { return TopDownCameraComponent.Get(); }
 

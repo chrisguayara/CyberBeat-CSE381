@@ -15,11 +15,13 @@ void ACyberBeatMusicManager::BeginPlay()
 {
     Super::BeginPlay();
 
-    if (!MusicTrack)
-    {
-        UE_LOG(LogTemp, Error, TEXT("No music assigned."));
-        return;
-    }
+    if (!SongData || !SongData->MusicTrack) return;
+
+    //if (!MusicTrack)
+    //{
+    //    UE_LOG(LogTemp, Error, TEXT("No music assigned."));
+    //    return;
+    //}
 
     UQuartzSubsystem* QuartzSubsystem =GetWorld()->GetSubsystem<UQuartzSubsystem>();
 
@@ -44,7 +46,7 @@ void ACyberBeatMusicManager::BeginPlay()
     FOnQuartzCommandEventBP EmptyCommandDelegate;
 
     NewClockHandle->SetBeatsPerMinute(
-        this,ImmediateBoundary,EmptyCommandDelegate,NewClockHandle,BPM);
+        this,ImmediateBoundary,EmptyCommandDelegate,NewClockHandle, SongData->BPM);
 
 
     FOnQuartzMetronomeEventBP BeatDelegate;
@@ -60,25 +62,19 @@ void ACyberBeatMusicManager::BeginPlay()
 
     if (MusicComponent)
     {
-        MusicComponent->SetSound(MusicTrack);
+        MusicComponent->SetSound(SongData->MusicTrack);
+        
         MusicComponent->bAutoActivate = false;
         MusicComponent->RegisterComponent();
 
         if (bStartMusicAutomatically)
         {
-            FQuartzQuantizationBoundary MusicBoundary;
-            MusicBoundary.Quantization = EQuartzCommandQuantization::Bar;
-            MusicBoundary.Multiplier = 1.f;
-            MusicBoundary.bFireOnClockStart = false;
-
-            MusicComponent->PlayQuantized(
-                this,NewClockHandle,MusicBoundary,EmptyCommandDelegate,0.f,0.f, 1.f,
-                EAudioFaderCurve::Linear
-            );
+            MusicStartTime = GetWorld()->GetTimeSeconds();
+            MusicComponent->Play();
         }
     }
 
-    UE_LOG(LogTemp,Warning,TEXT("Music Manager started. BPM: %.1f"),BPM );
+    UE_LOG(LogTemp,Warning,TEXT("Music Manager started. BPM: %.1f"), SongData->BPM);
 }
 
 void ACyberBeatMusicManager::HandleQuartzBeat(
@@ -108,4 +104,76 @@ void ACyberBeatMusicManager::EndPlay(
     }
 
     Super::EndPlay(EndPlayReason);
+}
+
+
+float ACyberBeatMusicManager::GetSongTimeSeconds() const
+{
+    if (!MusicComponent || !MusicComponent->IsPlaying() || !GetWorld())
+    {
+        return 0.0f;
+    }
+
+    const double ElapsedTime =
+        GetWorld()->GetTimeSeconds() - MusicStartTime;
+
+    return static_cast<float>(
+        ElapsedTime - SongData->AudioStartOffsetSeconds
+        );
+}
+
+EBeatTimingResult ACyberBeatMusicManager::JudgeInput(
+    float& TimingOffset
+) const
+{
+    TimingOffset = 0.0f;
+
+    if (!SongData || !MusicComponent || !MusicComponent->IsPlaying())
+    {
+        return EBeatTimingResult::Miss;
+    }
+
+    const float CurrentTime = GetSongTimeSeconds();
+
+    float BestDifference = TNumericLimits<float>::Max();
+
+    bool bFoundTimingEvent = false;
+
+    for (const FCyberBeatMusicEvent& Event : SongData->MusicEvents)
+    {
+        if (Event.EventType == EMusicEventType::SectionStart)
+        {
+            continue;
+        }
+
+        const float Difference = CurrentTime - Event.TimeSeconds;
+
+        if (FMath::Abs(Difference) < FMath::Abs(BestDifference))
+        {
+            BestDifference = Difference;
+            bFoundTimingEvent = true;
+        }
+    }
+
+    if (!bFoundTimingEvent)
+    {
+        return EBeatTimingResult::Miss;
+    }
+
+
+    TimingOffset = BestDifference * 1000.0f;
+
+    const float AbsoluteDifference = FMath::Abs(TimingOffset);
+
+    if (AbsoluteDifference <= SongData->PerfectWindowMs)
+    {
+        return EBeatTimingResult::Perfect;
+    }
+
+    if (AbsoluteDifference <= SongData->GoodWindowMs)
+    {
+        return EBeatTimingResult::Good;
+    }
+
+    return EBeatTimingResult::Miss;
 }

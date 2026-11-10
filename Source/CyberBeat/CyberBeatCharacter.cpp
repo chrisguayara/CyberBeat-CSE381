@@ -11,6 +11,8 @@
 #include "Materials/Material.h"
 #include "Engine/World.h"
 #include "InputCoreTypes.h"
+#include "CyberBeatMusicManager.h"
+#include "Kismet/GameplayStatics.h"
 
 ACyberBeatCharacter::ACyberBeatCharacter()
 {
@@ -104,4 +106,9 @@ void ACyberBeatCharacter::Tick(float DeltaSeconds)
 	Loc.Z = GetActorLocation().Z;
 	SetActorLocation(Loc);
 	SetActorRotation(FRotator(0.f, CurrentAngle, 0.f));
+}
+
+void TestRhythmInput()
+{
+
 }
