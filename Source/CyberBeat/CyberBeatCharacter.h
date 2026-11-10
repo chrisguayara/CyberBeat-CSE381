@@ -34,6 +34,12 @@ protected:
 
     float CurrentAngle = 0.f;
     float TargetAngle = 0.f;
+
+
+	bool bWWasDown = false;
+	bool bAWasDown = false;
+	bool bSWasDown = false;
+	bool bDWasDown = false;
 	
 private:
 

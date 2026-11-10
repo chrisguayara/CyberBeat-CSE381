@@ -52,7 +52,7 @@ void ACyberBeatCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Super::BeginPlay();
+	
 
 	GetCharacterMovement()->SetMovementMode(MOVE_None);   
 
@@ -72,17 +72,30 @@ void ACyberBeatCharacter::Tick(float DeltaSeconds)
 	const bool bS = PC->IsInputKeyDown(EKeys::S);
 	const bool bD = PC->IsInputKeyDown(EKeys::D);
 
-	float X = 0.f;
-	float Y = 0.f;
+	const bool bNewW = bW && !bWWasDown;
+	const bool bNewA = bA && !bAWasDown;
+	const bool bNewS = bS && !bSWasDown;
+	const bool bNewD = bD && !bDWasDown;
 
-	if (bW) X += 1.f;
-	if (bS) X -= 1.f;
-	if (bD) Y += 1.f;
-	if (bA) Y -= 1.f;
+	bWWasDown = bW;
+	bAWasDown = bA;
+	bSWasDown = bS;
+	bDWasDown = bD;
 
-	if (X != 0.f || Y != 0.f)
+	if (bNewW || bNewA || bNewS || bNewD)
 	{
-		TargetAngle = FMath::RadiansToDegrees(FMath::Atan2(Y, X)) + LaneYawOffset;
+		float X = 0.f;
+		float Y = 0.f;
+
+		if (bW) X += 1.f;
+		if (bS) X -= 1.f;
+		if (bD) Y += 1.f;
+		if (bA) Y -= 1.f;
+
+		if (X != 0.f || Y != 0.f)
+		{
+			TargetAngle = FMath::RadiansToDegrees(FMath::Atan2(Y, X)) + LaneYawOffset;
+		}
 	}
 	CurrentAngle = FMath::FixedTurn(CurrentAngle, TargetAngle, TurnSpeed * DeltaSeconds);
 
