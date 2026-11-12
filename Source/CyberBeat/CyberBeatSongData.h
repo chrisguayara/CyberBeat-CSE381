@@ -62,7 +62,12 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Song")
     float AudioStartOffsetSeconds = 0.0f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Song")
+
+    UPROPERTY(EditAnywhere, Category = "Song Data", meta = (MultiLine = "true"))
+    FString MusicEventText;
+
+
+    UPROPERTY(Transient)
     TArray<FCyberBeatMusicEvent> MusicEvents;
 
 
@@ -73,4 +78,8 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Timing",
         meta = (ClampMin = "0.0"))
     float GoodWindowMs = 150.0f;
+
+
+
+    void ParseMusicEvents();
 };

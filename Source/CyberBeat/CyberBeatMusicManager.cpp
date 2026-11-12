@@ -17,11 +17,8 @@ void ACyberBeatMusicManager::BeginPlay()
 
     if (!SongData || !SongData->MusicTrack) return;
 
-    //if (!MusicTrack)
-    //{
-    //    UE_LOG(LogTemp, Error, TEXT("No music assigned."));
-    //    return;
-    //}
+    
+    SongData->ParseMusicEvents();
 
     UQuartzSubsystem* QuartzSubsystem =GetWorld()->GetSubsystem<UQuartzSubsystem>();
 
