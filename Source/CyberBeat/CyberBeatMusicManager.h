@@ -16,6 +16,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(
     BeatNumber
 );
 
+
 UCLASS()
 class CYBERBEAT_API ACyberBeatMusicManager : public AActor
 {
@@ -41,6 +42,11 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Music Manager")
     EBeatTimingResult JudgeInput(float& TimingOffset) const;
+
+    UFUNCTION(BlueprintPure, Category = "Music Manager")
+    bool GetMusicIndicatorData(
+        float& TimeUntilNextEvent,float& TimeSinceLastEvent,float& EventInterval,
+        bool& bNextIsAccent,bool& bLastWasAccent ) const;
 
 
 protected:

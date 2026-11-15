@@ -174,3 +174,66 @@ EBeatTimingResult ACyberBeatMusicManager::JudgeInput(
 
     return EBeatTimingResult::Miss;
 }
+
+bool ACyberBeatMusicManager::GetMusicIndicatorData(
+	float& TimeUntilNextEvent, float& TimeSinceLastEvent, float& EventInterval,
+	bool& bNextIsAccent, bool& bLastWasAccent
+) const
+{
+
+    TimeUntilNextEvent = 0.0f;
+    TimeSinceLastEvent = -1.0f;
+    EventInterval = 1.0f;
+    bNextIsAccent = false;
+    bLastWasAccent = false;
+
+    if (!SongData || SongData->MusicEvents.Num() == 0)
+    {
+        return false;
+    }
+
+    const float CurrentSongTime = GetSongTimeSeconds();
+
+    const FCyberBeatMusicEvent* PreviousEvent = nullptr;
+    const FCyberBeatMusicEvent* NextEvent = nullptr;
+
+    // Find the previous and next playable music events.
+    for (const FCyberBeatMusicEvent& Event : SongData->MusicEvents)
+    {
+        if (Event.EventType == EMusicEventType::SectionStart)
+        {
+            continue;
+        }
+
+        if (Event.TimeSeconds <= CurrentSongTime)
+        {
+            PreviousEvent = &Event;
+        }
+        else
+        {
+            NextEvent = &Event;
+            break;
+        }
+    }
+
+    if (!NextEvent) return false;
+
+    TimeUntilNextEvent = NextEvent->TimeSeconds - CurrentSongTime;
+    bNextIsAccent = (NextEvent->EventType == EMusicEventType::Accent);
+
+    if (PreviousEvent)
+    {
+        TimeSinceLastEvent = CurrentSongTime - PreviousEvent->TimeSeconds;
+        EventInterval = NextEvent->TimeSeconds - PreviousEvent->TimeSeconds;
+        bLastWasAccent = (PreviousEvent->EventType == EMusicEventType::Accent);
+    }
+    else
+    {
+    
+        EventInterval = FMath::Max(NextEvent->TimeSeconds, 0.001f);
+    }
+
+    EventInterval = FMath::Max(EventInterval, 0.001f);
+
+    return true;
+}

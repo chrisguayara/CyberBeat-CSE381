@@ -10,6 +10,11 @@
 
 class UTextBlock;
 class ACyberBeatPlayerState;
+class UImage;
+class ACyberBeatMusicManager;
+
+
+
 /**
  * 
  */
@@ -22,6 +27,20 @@ class CYBERBEAT_API UCyberBeatHUDWidget : public UUserWidget
 protected:
 
     virtual void NativeConstruct() override;
+    virtual void NativeTick( const FGeometry& MyGeometry, float InDeltaTime ) override;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UImage> BeatIndicator;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UImage> InnerBeatCircle;
+
+    
+
+    UPROPERTY()
+    TObjectPtr<ACyberBeatMusicManager> MusicManager;
+
+
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UTextBlock> ScoreText;
@@ -37,6 +56,12 @@ protected:
 
     UFUNCTION()
     void UpdateScoreDisplay(int32 NewScore, int32 NewCombo, int32 NewBestCombo );
+
+
+
+
+
+
 
 public:
 
