@@ -2,10 +2,11 @@
 
 #include "CyberBeatGameMode.h"
 #include "Kismet/GameplayStatics.h"
+#include "CyberBeatPlayerState.h"
 
 ACyberBeatGameMode::ACyberBeatGameMode()
 {
-	// stub
+    PlayerStateClass = ACyberBeatPlayerState::StaticClass();
 }
 
 void ACyberBeatGameMode::LoadLevel(int32 LevelIndex)

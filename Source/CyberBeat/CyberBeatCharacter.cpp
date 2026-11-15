@@ -14,6 +14,7 @@
 #include "CyberBeatMusicManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
+#include "CyberBeatPlayerState.h"
 #include "NiagaraComponent.h"
 #include "Engine/Engine.h"
 
@@ -193,6 +194,15 @@ void ACyberBeatCharacter::TryAttack()
 	float TimingOffset = 0.0f;
 
 	EBeatTimingResult Result = MusicManager->JudgeInput(TimingOffset);
+
+
+	ACyberBeatPlayerState* ScoreState = GetPlayerState<ACyberBeatPlayerState>();
+
+	if (ScoreState)
+	{
+		ScoreState->RegisterHit(Result);
+	}
+
 
 	switch (Result)
 	{
