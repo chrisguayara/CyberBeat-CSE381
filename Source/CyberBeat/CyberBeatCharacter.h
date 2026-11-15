@@ -9,7 +9,7 @@
 
 
 
-
+class UCyberBeatHUDWidget;
 class UCameraComponent;
 class USpringArmComponent;
 class ACyberBeatMusicManager;
@@ -53,6 +53,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	TObjectPtr<UNiagaraSystem> AttackSlashEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UCyberBeatHUDWidget> HUDWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UCyberBeatHUDWidget> HUDWidget;
 
 
 	

@@ -17,6 +17,7 @@
 #include "CyberBeatPlayerState.h"
 #include "NiagaraComponent.h"
 #include "Engine/Engine.h"
+#include "CyberBeatHUDWidget.h"
 
 ACyberBeatCharacter::ACyberBeatCharacter()
 {
@@ -68,6 +69,20 @@ void ACyberBeatCharacter::BeginPlay()
 	if (MusicManager)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Music Manager exists"));
+	}
+
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+
+	if (PC && HUDWidgetClass)
+	{
+		HUDWidget = CreateWidget<UCyberBeatHUDWidget>(
+			PC,HUDWidgetClass);
+
+		if (HUDWidget)
+		{
+			HUDWidget->AddToViewport();
+		}
 	}
 	
 
@@ -194,7 +209,10 @@ void ACyberBeatCharacter::TryAttack()
 	float TimingOffset = 0.0f;
 
 	EBeatTimingResult Result = MusicManager->JudgeInput(TimingOffset);
-
+	if (HUDWidget)
+	{
+		HUDWidget->ShowTiming(Result);
+	}
 
 	ACyberBeatPlayerState* ScoreState = GetPlayerState<ACyberBeatPlayerState>();
 
@@ -210,24 +228,24 @@ void ACyberBeatCharacter::TryAttack()
 		UE_LOG(LogTemp, Warning,
 			TEXT("Perfect, Timing offset: %.1f ms"),
 			TimingOffset);
-		GEngine->AddOnScreenDebugMessage(
-			-1,1.0f,FColor::Yellow,TEXT("PERFECT!"));
+		//GEngine->AddOnScreenDebugMessage(
+		//	-1,1.0f,FColor::Yellow,TEXT("PERFECT!"));
 		break;
 
 	case EBeatTimingResult::Good:
 		UE_LOG(LogTemp, Warning,
 			TEXT("Good, Timing offset: %.1f ms"),
 			TimingOffset);
-		GEngine->AddOnScreenDebugMessage(
-			-1, 1.0f, FColor::Yellow, TEXT("GOOD!"));
+		//GEngine->AddOnScreenDebugMessage(
+		//	-1, 1.0f, FColor::Yellow, TEXT("GOOD!"));
 		break;
 
 	case EBeatTimingResult::Miss:
 		UE_LOG(LogTemp, Error,
 			TEXT("Miss, Timing offset: %.1f ms"),
 			TimingOffset);
-		GEngine->AddOnScreenDebugMessage(
-			-1, 1.0f, FColor::Yellow, TEXT("MISS!"));
+		//GEngine->AddOnScreenDebugMessage(
+		//	-1, 1.0f, FColor::Yellow, TEXT("MISS!"));
 		break;
 	}
 }
