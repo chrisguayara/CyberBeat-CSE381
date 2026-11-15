@@ -237,3 +237,22 @@ bool ACyberBeatMusicManager::GetMusicIndicatorData(
 
     return true;
 }
+
+
+const TArray<FCyberBeatMusicEvent>& ACyberBeatMusicManager::GetMusicEvents() const
+{
+    static const TArray<FCyberBeatMusicEvent> Empty;
+    return SongData ? SongData->MusicEvents : Empty;
+}
+
+EBeatTimingResult ACyberBeatMusicManager::JudgeAgainstTime(float TargetSongTime, float& TimingOffsetMs) const
+{
+    TimingOffsetMs = 0.f;
+    if (!SongData || !MusicComponent || !MusicComponent->IsPlaying()) return EBeatTimingResult::Miss;
+
+    TimingOffsetMs = (GetSongTimeSeconds() - TargetSongTime) * 1000.f;
+    const float Abs = FMath::Abs(TimingOffsetMs);
+    if (Abs <= SongData->PerfectWindowMs) return EBeatTimingResult::Perfect;
+    if (Abs <= SongData->GoodWindowMs)    return EBeatTimingResult::Good;
+    return EBeatTimingResult::Miss;
+}

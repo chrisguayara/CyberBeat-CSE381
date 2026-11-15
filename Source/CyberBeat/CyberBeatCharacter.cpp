@@ -89,6 +89,19 @@ void ACyberBeatCharacter::BeginPlay()
 
 	GetCharacterMovement()->SetMovementMode(MOVE_None);   
 
+	if (const ACyberBeatTrack* Track = Cast<ACyberBeatTrack>(
+        UGameplayStatics::GetActorOfClass(GetWorld(), ACyberBeatTrack::StaticClass())))
+	{
+		TrackCenter = Track->GetActorLocation();
+		TrackRadius = Track->GetTrackRadius();
+	}
+
+	// camera stays over the core instead of following you around the ring
+	CameraBoom->SetUsingAbsoluteLocation(true);
+	CameraBoom->SetWorldLocation(TrackCenter);
+	CameraBoom->SetWorldRotation(FRotator(-80.f, 0.f, 0.f));
+	CameraBoom->TargetArmLength = 1800.
+
 	const FVector Rel = GetActorLocation() - TrackCenter;
 	CurrentAngle = TargetAngle = FMath::RadiansToDegrees(FMath::Atan2(Rel.Y, Rel.X));
 }
@@ -206,48 +219,43 @@ void ACyberBeatCharacter::TryAttack()
 		return;
 	}
 
-	float TimingOffset = 0.0f;
+	const float Now = MusicManager->GetSongTimeSeconds();
 
-	EBeatTimingResult Result = MusicManager->JudgeInput(TimingOffset);
-	if (HUDWidget)
+	// finds the enemy in my lane whose arrival time is closest to now
+	ACyberBeatBasicEnemy* Best = nullptr;
+	float BestDiff = TNumericLimits<float>::Max();
+	for (TActorIterator<ACyberBeatBasicEnemy> It(GetWorld()); It; ++It)
 	{
-		HUDWidget->ShowTiming(Result);
+		ACyberBeatBasicEnemy* Enemy = *It;
+		const float LaneDelta = FMath::Abs(FMath::FindDeltaAngleDegrees(TargetAngle, Enemy->GetLaneAngleDeg()));
+		if (LaneDelta > 22.5f) continue;   // not my lane
+
+		const float Diff = FMath::Abs(Now - Enemy->GetArrivalSongTime());
+		if (Diff < BestDiff) { BestDiff = Diff; Best = Enemy; }
 	}
 
-	ACyberBeatPlayerState* ScoreState = GetPlayerState<ACyberBeatPlayerState>();
+	EBeatTimingResult Result = EBeatTimingResult::Miss;   // no enemy in my lane = whiff
+	float OffsetMs = 0.f;
+	if (Best)
+	{
+		Result = MusicManager->JudgeAgainstTime(Best->GetArrivalSongTime(), OffsetMs);
+		if (Result != EBeatTimingResult::Miss)
+		{
+			Best->Kill();
+		}
+	}
 
-	if (ScoreState)
+	if (HUDWidget) { HUDWidget->ShowTiming(Result); }
+
+	if (ACyberBeatPlayerState* ScoreState = GetPlayerState<ACyberBeatPlayerState>())
 	{
 		ScoreState->RegisterHit(Result);
 	}
 
-
-	switch (Result)
-	{
-	case EBeatTimingResult::Perfect:
-		UE_LOG(LogTemp, Warning,
-			TEXT("Perfect, Timing offset: %.1f ms"),
-			TimingOffset);
-		//GEngine->AddOnScreenDebugMessage(
-		//	-1,1.0f,FColor::Yellow,TEXT("PERFECT!"));
-		break;
-
-	case EBeatTimingResult::Good:
-		UE_LOG(LogTemp, Warning,
-			TEXT("Good, Timing offset: %.1f ms"),
-			TimingOffset);
-		//GEngine->AddOnScreenDebugMessage(
-		//	-1, 1.0f, FColor::Yellow, TEXT("GOOD!"));
-		break;
-
-	case EBeatTimingResult::Miss:
-		UE_LOG(LogTemp, Error,
-			TEXT("Miss, Timing offset: %.1f ms"),
-			TimingOffset);
-		//GEngine->AddOnScreenDebugMessage(
-		//	-1, 1.0f, FColor::Yellow, TEXT("MISS!"));
-		break;
-	}
+	UE_LOG(LogTemp, Warning, TEXT("Attack: %s, offset %.1f ms, enemy %s"),
+		Result == EBeatTimingResult::Perfect ? TEXT("Perfect") :
+		Result == EBeatTimingResult::Good ? TEXT("Good") : TEXT("Miss"),
+		OffsetMs, Best ? TEXT("found") : TEXT("none in lane"));
 }
 
 void ACyberBeatCharacter::PlayAttackEffect()

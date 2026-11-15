@@ -3,6 +3,8 @@
 
 #include "CyberBeatSongData.h"
 
+#include "Sound/SoundBase.h"
+
 void UCyberBeatSongData::ParseMusicEvents()
 {
     MusicEvents.Empty();
@@ -51,6 +53,20 @@ void UCyberBeatSongData::ParseMusicEvents()
         }
 
         MusicEvents.Add(NewEvent);
+    }
+
+    if (MusicEvents.Num() == 0 && BPM > 0.f && MusicTrack)
+    {
+        const float Duration = MusicTrack->GetDuration();
+        const float Length = (Duration > 0.f && Duration < 36000.f) ? Duration : 180.f;
+        const float Interval = 60.f / BPM;
+        for (int32 i = 0; i * Interval < Length; ++i)
+        {
+            FCyberBeatMusicEvent E;
+            E.TimeSeconds = i * Interval;
+            E.EventType = EMusicEventType::Beat;
+            MusicEvents.Add(E);
+        }
     }
 
     MusicEvents.Sort([](const FCyberBeatMusicEvent& A, const FCyberBeatMusicEvent& B)

@@ -48,6 +48,9 @@ public:
         float& TimeUntilNextEvent,float& TimeSinceLastEvent,float& EventInterval,
         bool& bNextIsAccent,bool& bLastWasAccent ) const;
 
+    const TArray<FCyberBeatMusicEvent>& GetMusicEvents() const;
+    EBeatTimingResult JudgeAgainstTime(float TargetSongTime, float& TimingOffsetMs) const;
+
 
 protected:
 
