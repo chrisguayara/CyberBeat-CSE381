@@ -6,8 +6,14 @@
 
 class UStaticMeshComponent;
 class USphereComponent;
+class ACyberBeatMusicManager;
 
-/** A basic enemy: drifts in a straight line toward the core and "hits" it on arrival. */
+/**
+ * An enemy that travels down one lane and reaches the hit zone (the track ring)
+ * exactly at ArrivalSongTime. Its position is computed from the song clock every
+ * frame, so it can never drift away from the music. If it is not killed it keeps
+ * going and hits the core.
+ */
 UCLASS()
 class ACyberBeatBasicEnemy : public AActor
 {
@@ -18,16 +24,21 @@ public:
 
     virtual void Tick(float DeltaTime) override;
 
-    // is Called from the melee / parry code when the player kills it in the success zone. 
+    /** Called by the spawner right after spawning. */
+    void Init(ACyberBeatMusicManager* InManager, const FVector& InCenter, float InLaneAngleDeg,
+              float InSpawnRadius, float InHitRadius, float InArrivalSongTime, float InTravelTime);
+
+    /** World yaw of the lane this enemy is in (0 = +X = W key, 90 = D, ...). */
+    float GetLaneAngleDeg() const { return LaneAngleDeg; }
+
+    /** Song time (seconds) at which this enemy should be hit. */
+    float GetArrivalSongTime() const { return ArrivalSongTime; }
+
+    /** Called by the character when the player kills it in the success zone. */
     UFUNCTION(BlueprintCallable, Category = "Enemy")
     void Kill();
 
-    /** Where it is heading. The spawner sets this; default is the world origin (the core). */
-    void SetTargetLocation(const FVector& NewTarget) { TargetLocation = NewTarget; }
-
 protected:
-    virtual void BeginPlay() override;
-
     /** Called when it reaches the core. Damage the core here once the core exists. */
     void ReachCore();
 
@@ -37,15 +48,20 @@ protected:
     UPROPERTY(VisibleAnywhere, Category = "Components")
     TObjectPtr<UStaticMeshComponent> Mesh;
 
-    UPROPERTY(EditAnywhere, Category = "Tuning", meta = (ClampMin = "0.0", Units = "cm/s"))
-    float MoveSpeed = 150.f;
+    UPROPERTY()
+    TObjectPtr<ACyberBeatMusicManager> Manager;
 
+    /** How close to the center counts as "reached the core". */
     UPROPERTY(EditAnywhere, Category = "Tuning", meta = (ClampMin = "0.0", Units = "cm"))
-    float HitDistance = 120.f;
+    float CoreRadius = 100.f;
 
     UPROPERTY(EditAnywhere, Category = "Tuning", meta = (ClampMin = "0"))
     int32 Damage = 1;
 
-    UPROPERTY(EditAnywhere, Category = "Tuning")
-    FVector TargetLocation = FVector::ZeroVector;
+    FVector Center = FVector::ZeroVector;
+    float LaneAngleDeg = 0.f;
+    float SpawnRadius = 1500.f;
+    float HitRadius = 500.f;
+    float ArrivalSongTime = 0.f;
+    float TravelTime = 2.f;
 };

@@ -18,6 +18,9 @@
 #include "NiagaraComponent.h"
 #include "Engine/Engine.h"
 #include "CyberBeatHUDWidget.h"
+#include "EngineUtils.h"             
+#include "Enemy/CyberBeatBasicEnemy.h"
+#include "CyberBeatTrack.h"
 
 ACyberBeatCharacter::ACyberBeatCharacter()
 {
@@ -100,7 +103,7 @@ void ACyberBeatCharacter::BeginPlay()
 	CameraBoom->SetUsingAbsoluteLocation(true);
 	CameraBoom->SetWorldLocation(TrackCenter);
 	CameraBoom->SetWorldRotation(FRotator(-80.f, 0.f, 0.f));
-	CameraBoom->TargetArmLength = 1800.
+	CameraBoom->TargetArmLength = 1800;
 
 	const FVector Rel = GetActorLocation() - TrackCenter;
 	CurrentAngle = TargetAngle = FMath::RadiansToDegrees(FMath::Atan2(Rel.Y, Rel.X));

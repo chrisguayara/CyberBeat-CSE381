@@ -1,6 +1,8 @@
 #include "CyberBeatBasicEnemy.h"
+#include "CyberBeatMusicManager.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "UObject/ConstructorHelpers.h"
 
 ACyberBeatBasicEnemy::ACyberBeatBasicEnemy()
@@ -20,31 +22,41 @@ ACyberBeatBasicEnemy::ACyberBeatBasicEnemy()
     if (SphereMesh.Succeeded())
     {
         Mesh->SetStaticMesh(SphereMesh.Object);
-        Mesh->SetRelativeScale3D(FVector(1.f));  
     }
 }
 
-void ACyberBeatBasicEnemy::BeginPlay()
+void ACyberBeatBasicEnemy::Init(ACyberBeatMusicManager* InManager, const FVector& InCenter, float InLaneAngleDeg,
+                                float InSpawnRadius, float InHitRadius, float InArrivalSongTime, float InTravelTime)
 {
-    Super::BeginPlay();
+    Manager = InManager;
+    Center = InCenter;
+    LaneAngleDeg = InLaneAngleDeg;
+    SpawnRadius = InSpawnRadius;
+    HitRadius = InHitRadius;
+    ArrivalSongTime = InArrivalSongTime;
+    TravelTime = FMath::Max(InTravelTime, 0.1f);
 }
 
 void ACyberBeatBasicEnemy::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    const FVector Current = GetActorLocation();
-    FVector ToTarget = TargetLocation - Current;
-    ToTarget.Z = 0.f;   // stay on the track plane
+    if (!IsValid(Manager)) return;
 
-    if (ToTarget.Size() <= HitDistance)
+    // constant speed: it covers (SpawnRadius - HitRadius) in TravelTime seconds and is
+    // exactly at HitRadius when the song clock reaches ArrivalSongTime.
+    const float Now = Manager->GetSongTimeSeconds();
+    const float Speed = (SpawnRadius - HitRadius) / TravelTime;
+    const float Radius = HitRadius + (ArrivalSongTime - Now) * Speed;
+
+    if (Radius <= CoreRadius)
     {
         ReachCore();
         return;
     }
 
-    const FVector Step = ToTarget.GetSafeNormal() * MoveSpeed * DeltaTime;
-    SetActorLocation(Current + Step);
+    const float Rad = FMath::DegreesToRadians(LaneAngleDeg);
+    SetActorLocation(Center + FVector(FMath::Cos(Rad), FMath::Sin(Rad), 0.f) * Radius);
 }
 
 void ACyberBeatBasicEnemy::Kill()

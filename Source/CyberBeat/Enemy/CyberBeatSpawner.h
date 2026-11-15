@@ -5,7 +5,8 @@
 #include "CyberBeatSpawner.generated.h"
 
 class ACyberBeatBasicEnemy;
-
+class ACyberBeatMusicManager;
+class ACyberBeatTrack;
 
 UCLASS()
 class ACyberBeatSpawner : public AActor
@@ -15,29 +16,53 @@ class ACyberBeatSpawner : public AActor
 public:
     ACyberBeatSpawner();
 
+    virtual void Tick(float DeltaTime) override;
+
 protected:
     virtual void BeginPlay() override;
-    virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 
-    void SpawnEnemy();
+    void SpawnForEvent(float EventTime);
 
     UPROPERTY(EditAnywhere, Category = "Spawning")
     TSubclassOf<ACyberBeatBasicEnemy> EnemyClass;
 
-    /** Distance from the center. Make this larger than the track radius. */
+    /** How far from the center enemies appear. Must be larger than the track radius. */
     UPROPERTY(EditAnywhere, Category = "Spawning", meta = (ClampMin = "0.0", Units = "cm"))
-    float SpawnRadius = 1000.f;
+    float SpawnRadius = 1500.f;
 
-    UPROPERTY(EditAnywhere, Category = "Spawning", meta = (ClampMin = "0.1", Units = "s"))
-    float SpawnInterval = 3.f;
+    /** Seconds an enemy takes to travel from the spawn point to the hit zone. */
+    UPROPERTY(EditAnywhere, Category = "Spawning", meta = (ClampMin = "0.2", Units = "s"))
+    float TravelTime = 2.f;
 
-    /** If true, snap to one of 8 lane angles instead of any angle. Off for now. */
+    /** 1 = an enemy on every beat, 2 = every other beat, and so on. */
+    UPROPERTY(EditAnywhere, Category = "Spawning", meta = (ClampMin = "1"))
+    int32 BeatStride = 2;
+
+    /** Skip events earlier than TravelTime into the song, which could not spawn far enough out. */
     UPROPERTY(EditAnywhere, Category = "Spawning")
-    bool bSnapToLanes = false;
+    bool bSkipEarlyEvents = true;
 
-    /** Height to spawn at, so enemies sit on the track surface. */
+    /** Same seed = same lane pattern every run. */
+    UPROPERTY(EditAnywhere, Category = "Spawning")
+    int32 LaneSeed = 1234;
+
+    /** Height above the track center to spawn and travel at. */
     UPROPERTY(EditAnywhere, Category = "Spawning")
     float SpawnZ = 100.f;
 
-    FTimerHandle SpawnTimer;
+    /** Used only if no track actor exists in the level. */
+    UPROPERTY(EditAnywhere, Category = "Spawning", meta = (ClampMin = "0.0", Units = "cm"))
+    float FallbackHitRadius = 500.f;
+
+    /** Added to every lane angle. Leave at 0 unless the character's LaneYawOffset is not 0. */
+    UPROPERTY(EditAnywhere, Category = "Spawning")
+    float LaneAngleOffset = 0.f;
+
+    UPROPERTY()
+    TObjectPtr<ACyberBeatMusicManager> Manager;
+
+    FVector Center = FVector::ZeroVector;
+    float HitRadius = 500.f;
+    int32 NextEventIndex = 0;
+    FRandomStream Stream;
 };
