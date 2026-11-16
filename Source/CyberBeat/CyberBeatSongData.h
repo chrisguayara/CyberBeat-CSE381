@@ -34,15 +34,15 @@ struct FCyberBeatMusicEvent
 {
     GENERATED_BODY()
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music Event",
-        meta = (ClampMin = "0.0"))
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music Event", meta = (ClampMin = "0.0"))
     float TimeSeconds = 0.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music Event")
     EMusicEventType EventType = EMusicEventType::Beat;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music Event")
+    int32 Lane = -1;
 };
-
 USTRUCT(BlueprintType)
 struct FCyberBeatSection
 {

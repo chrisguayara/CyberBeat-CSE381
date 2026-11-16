@@ -1,4 +1,5 @@
 #include "CyberBeatCore.h"
+#include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
@@ -8,8 +9,11 @@ ACyberBeatCore::ACyberBeatCore()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	SetRootComponent(Root);
+
 	CoreMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CoreMesh"));
-	SetRootComponent(CoreMesh);
+	CoreMesh->SetupAttachment(Root);
 	CoreMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> Sphere(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
@@ -26,29 +30,17 @@ void ACyberBeatCore::OnConstruction(const FTransform& Transform)
 	if (MeshOverride)
 	{
 		CoreMesh->SetStaticMesh(MeshOverride);
+		// Your own mesh keeps whatever size it was authored at; scale the actor in the level.
+		CoreMesh->SetRelativeScale3D(FVector::OneVector);
 	}
+	else
+	{
+		// The engine sphere is 100 cm across.
+		CoreMesh->SetRelativeScale3D(FVector(CoreDiameter / 100.f));
+	}
+
 	if (CoreMaterial)
 	{
 		CoreMesh->SetMaterial(0, CoreMaterial);
 	}
-	// The engine sphere is 100cm across. If you use your own mesh, set the scale by hand instead.
-	if (!MeshOverride)
-	{
-		CoreMesh->SetRelativeScale3D(FVector(CoreDiameter / 100.f));
-	}
 }
-
-// Called when the game starts or when spawned
-void ACyberBeatCore::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
-// Called every frame
-void ACyberBeatCore::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-

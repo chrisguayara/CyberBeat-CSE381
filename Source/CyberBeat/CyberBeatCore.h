@@ -20,6 +20,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> CoreMesh;
 
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	TObjectPtr<USceneComponent> Root;
+
 	/** Optional override. Leave empty to use the engine sphere. */
 	UPROPERTY(EditAnywhere, Category = "Look")
 	TObjectPtr<UStaticMesh> MeshOverride;
@@ -29,7 +32,7 @@ protected:
 
 	/** Diameter in cm. Keep it under the track's InnerRadius * 2 (default 240). */
 	UPROPERTY(EditAnywhere, Category = "Look", meta = (ClampMin = "10.0", Units = "cm"))
-	float CoreDiameter = 160.f;
+	float CoreDiameter = 100.f;
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 };

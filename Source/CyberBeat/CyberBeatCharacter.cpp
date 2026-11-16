@@ -101,10 +101,7 @@ void ACyberBeatCharacter::BeginPlay()
 		TrackRadius = Track->GetPlayerRadius();
 	}
 
-	DrawDebugCircle(GetWorld(), TrackCenter + FVector(0.f, 0.f, 50.f), TrackRadius, 64,
-                FColor::Red, true, -1.f, 0, 4.f, FVector(1, 0, 0), FVector(0, 1, 0), false);
-	DrawDebugSphere(GetWorld(), TrackCenter + FVector(0.f, 0.f, 50.f), 30.f, 16, FColor::Yellow, true);
-	UE_LOG(LogTemp, Warning, TEXT("TrackCenter=%s TrackRadius=%.0f"), *TrackCenter.ToString(), TrackRadius);
+	
 
 	// camera stays over the core instead of following you around the ring
 	CameraBoom->SetUsingAbsoluteLocation(true);
