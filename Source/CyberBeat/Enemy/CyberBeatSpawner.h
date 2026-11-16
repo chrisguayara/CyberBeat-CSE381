@@ -65,4 +65,9 @@ protected:
     float HitRadius = 500.f;
     int32 NextEventIndex = 0;
     FRandomStream Stream;
+
+    UPROPERTY(EditAnywhere, Category = "Spawning")
+    TArray<int32> LanePattern;
+
+    int32 PatternIndex = 0;
 };

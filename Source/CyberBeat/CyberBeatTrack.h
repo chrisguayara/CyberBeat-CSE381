@@ -29,6 +29,9 @@ public:
 
     static constexpr int32 NumLanes = 8;
 
+    float GetPlayerRadius() const { return FMath::Max(TrackRadius - PlayerInset, 0.f); }
+
+
 protected:
     UPROPERTY(VisibleAnywhere, Category = "Components")
     TObjectPtr<USceneComponent> Root;
@@ -74,4 +77,6 @@ protected:
 
     UPROPERTY(EditAnywhere, Category = "Look")
     TObjectPtr<UMaterialInterface> MarkerMaterial;
+    UPROPERTY(EditAnywhere, Category = "Track", meta = (ClampMin = "0.0", Units = "cm"))
+    float PlayerInset = 120.f;
 };

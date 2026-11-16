@@ -4,6 +4,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "UObject/ConstructorHelpers.h"
+#include "CyberBeatCore.h"
+#include "Kismet/GameplayStatics.h"
 
 ACyberBeatBasicEnemy::ACyberBeatBasicEnemy()
 {

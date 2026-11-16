@@ -256,3 +256,29 @@ EBeatTimingResult ACyberBeatMusicManager::JudgeAgainstTime(float TargetSongTime,
     if (Abs <= SongData->GoodWindowMs)    return EBeatTimingResult::Good;
     return EBeatTimingResult::Miss;
 }
+
+void ACyberBeatMusicManager::StartFailSequence()
+{
+    if (bFailed) return;
+    FrozenSongTime = GetSongTimeSeconds();   // capture before flipping the flag
+    bFailed = true;
+    FailElapsed = 0.f;
+}
+
+void ACyberBeatMusicManager::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+    if (!bFailed || !MusicComponent) return;
+
+    FailElapsed += DeltaTime;
+    const float Alpha = FMath::Clamp(FailElapsed / FailSlowdownSeconds, 0.f, 1.f);
+
+    // Tape-stop: pitch and speed drop together, volume fades at the end
+    MusicComponent->SetPitchMultiplier(FMath::Lerp(1.f, FailMinPitch, Alpha));
+    MusicComponent->SetVolumeMultiplier(FMath::Lerp(1.f, 0.f, Alpha * Alpha));
+
+    if (Alpha >= 1.f && MusicComponent->IsPlaying())
+    {
+        MusicComponent->Stop();
+    }
+}

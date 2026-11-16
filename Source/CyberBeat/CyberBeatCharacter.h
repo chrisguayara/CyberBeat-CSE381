@@ -13,6 +13,7 @@ class UCyberBeatHUDWidget;
 class UCameraComponent;
 class USpringArmComponent;
 class ACyberBeatMusicManager;
+class USoundBase;
 /**
  *  A controllable top-down perspective character
  */
@@ -59,6 +60,12 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UCyberBeatHUDWidget> HUDWidget;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Audio")
+	TObjectPtr<USoundBase> SwingSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Audio")
+	TObjectPtr<USoundBase> HitSound;
 
 
 	

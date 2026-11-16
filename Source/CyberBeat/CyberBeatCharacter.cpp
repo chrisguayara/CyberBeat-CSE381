@@ -22,6 +22,7 @@
 #include "Enemy/CyberBeatBasicEnemy.h"
 #include "CyberBeatTrack.h"
 #include "DrawDebugHelpers.h"
+#include "Sound/SoundBase.h"
 
 ACyberBeatCharacter::ACyberBeatCharacter()
 {
@@ -97,7 +98,7 @@ void ACyberBeatCharacter::BeginPlay()
         UGameplayStatics::GetActorOfClass(GetWorld(), ACyberBeatTrack::StaticClass())))
 	{
 		TrackCenter = Track->GetActorLocation();
-		TrackRadius = Track->GetTrackRadius();
+		TrackRadius = Track->GetPlayerRadius();
 	}
 
 	DrawDebugCircle(GetWorld(), TrackCenter + FVector(0.f, 0.f, 50.f), TrackRadius, 64,
@@ -243,6 +244,8 @@ void ACyberBeatCharacter::TryAttack()
 		if (Diff < BestDiff) { BestDiff = Diff; Best = Enemy; }
 	}
 
+	if (SwingSound) { UGameplayStatics::PlaySound2D(this, SwingSound); }
+
 	EBeatTimingResult Result = EBeatTimingResult::Miss;   // no enemy in my lane = whiff
 	float OffsetMs = 0.f;
 	if (Best)
@@ -251,6 +254,7 @@ void ACyberBeatCharacter::TryAttack()
 		if (Result != EBeatTimingResult::Miss)
 		{
 			Best->Kill();
+			if (HitSound) { UGameplayStatics::PlaySound2D(this, HitSound); }
 		}
 	}
 

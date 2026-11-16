@@ -56,18 +56,39 @@ void UCyberBeatSongData::ParseMusicEvents()
     }
 
     if (MusicEvents.Num() == 0 && BPM > 0.f && MusicTrack)
+{
+    const float Duration = MusicTrack->GetDuration();
+    const float Length = (Duration > 0.f && Duration < 36000.f) ? Duration : 180.f;
+    const float Interval = 60.f / BPM;
+    const int32 PerBar = FMath::Max(BeatsPerBar, 1);
+
+    for (int32 Beat = 0; Beat * Interval < Length; ++Beat)
     {
-        const float Duration = MusicTrack->GetDuration();
-        const float Length = (Duration > 0.f && Duration < 36000.f) ? Duration : 180.f;
-        const float Interval = 60.f / BPM;
-        for (int32 i = 0; i * Interval < Length; ++i)
+        const int32 Bar = Beat / PerBar + 1;
+
+        // The section this beat falls in: the last one that has started
+        const FCyberBeatSection* Section = nullptr;
+        for (const FCyberBeatSection& S : Sections)
         {
-            FCyberBeatMusicEvent E;
-            E.TimeSeconds = i * Interval;
-            E.EventType = EMusicEventType::Beat;
-            MusicEvents.Add(E);
+            if (S.StartBar <= Bar) Section = &S;
         }
+
+        int32 Stride = 1;                
+        int32 BeatsIntoSection = Beat;
+        if (Sections.Num() > 0)
+        {
+            if (!Section) continue;       // before the first section
+            Stride = Section->EnemyEveryNBeats;
+            BeatsIntoSection = Beat - (Section->StartBar - 1) * PerBar;
+        }
+        if (Stride <= 0 || BeatsIntoSection % Stride != 0) continue;
+
+        FCyberBeatMusicEvent E;
+        E.TimeSeconds = Beat * Interval;
+        E.EventType = (Beat % PerBar == 0) ? EMusicEventType::Accent : EMusicEventType::Beat;
+        MusicEvents.Add(E);
     }
+}
 
     MusicEvents.Sort([](const FCyberBeatMusicEvent& A, const FCyberBeatMusicEvent& B)
         {

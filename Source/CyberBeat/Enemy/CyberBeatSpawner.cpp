@@ -88,7 +88,16 @@ void ACyberBeatSpawner::SpawnForEvent(float EventTime)
 {
     if (!EnemyClass) return;
 
-    const int32 Lane = Stream.RandRange(0, ACyberBeatTrack::NumLanes - 1);
+    int32 Lane;
+    if (LanePattern.Num() > 0)
+    {
+        Lane = FMath::Abs(LanePattern[PatternIndex % LanePattern.Num()]) % ACyberBeatTrack::NumLanes;
+        ++PatternIndex;
+    }
+    else
+    {
+        Lane = Stream.RandRange(0, ACyberBeatTrack::NumLanes - 1);
+    }
     const float AngleDeg = Lane * 45.f + LaneAngleOffset;
     const float Rad = FMath::DegreesToRadians(AngleDeg);
 

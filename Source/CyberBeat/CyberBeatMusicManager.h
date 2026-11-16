@@ -52,6 +52,12 @@ public:
     EBeatTimingResult JudgeAgainstTime(float TargetSongTime, float& TimingOffsetMs) const;
 
 
+    virtual void Tick(float DeltaTime) override;
+
+    UFUNCTION(BlueprintCallable, Category = "Music Manager")
+    void StartFailSequence();
+
+    bool IsFailed() const { return bFailed; }
 protected:
 
     UPROPERTY(EditAnywhere, Category = "Music")
@@ -59,6 +65,13 @@ protected:
 
     UPROPERTY(EditAnywhere, Category = "Music")
     bool bStartMusicAutomatically = true;
+
+    UPROPERTY(EditAnywhere, Category = "Fail", meta = (ClampMin = "0.2", Units = "s"))
+    float FailSlowdownSeconds = 2.5f;
+
+    /** Pitch/speed the song winds down to before stopping. */
+    UPROPERTY(EditAnywhere, Category = "Fail", meta = (ClampMin = "0.1", ClampMax = "1.0"))
+    float FailMinPitch = 0.15f;
 
 private:
     UFUNCTION()
@@ -76,4 +89,8 @@ private:
     int32 CurrentBeat = 0;
 
     double MusicStartTime = 0.0;
+    
+    bool bFailed = false;
+    float FailElapsed = 0.f;
+    float FrozenSongTime = 0.f;
 };
