@@ -21,7 +21,7 @@
 #include "EngineUtils.h"             
 #include "Enemy/CyberBeatBasicEnemy.h"
 #include "CyberBeatTrack.h"
-#include "DrawDebugHelpers.h
+#include "DrawDebugHelpers.h"
 
 ACyberBeatCharacter::ACyberBeatCharacter()
 {
