@@ -1,14 +1,41 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "CyberBeatCore.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "Materials/MaterialInterface.h"
+#include "UObject/ConstructorHelpers.h"
 
-// Sets default values
 ACyberBeatCore::ACyberBeatCore()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
+	CoreMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CoreMesh"));
+	SetRootComponent(CoreMesh);
+	CoreMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> Sphere(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+	if (Sphere.Succeeded())
+	{
+		CoreMesh->SetStaticMesh(Sphere.Object);
+	}
+}
+
+void ACyberBeatCore::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+
+	if (MeshOverride)
+	{
+		CoreMesh->SetStaticMesh(MeshOverride);
+	}
+	if (CoreMaterial)
+	{
+		CoreMesh->SetMaterial(0, CoreMaterial);
+	}
+	// The engine sphere is 100cm across. If you use your own mesh, set the scale by hand instead.
+	if (!MeshOverride)
+	{
+		CoreMesh->SetRelativeScale3D(FVector(CoreDiameter / 100.f));
+	}
 }
 
 // Called when the game starts or when spawned

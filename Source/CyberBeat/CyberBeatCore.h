@@ -1,26 +1,35 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "CyberBeatCore.generated.h"
 
+class UStaticMeshComponent;
+class UMaterialInterface;
+class UStaticMesh;
+
 UCLASS()
 class CYBERBEAT_API ACyberBeatCore : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
-	// Sets default values for this actor's properties
+
+public:
 	ACyberBeatCore();
 
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	TObjectPtr<UStaticMeshComponent> CoreMesh;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	/** Optional override. Leave empty to use the engine sphere. */
+	UPROPERTY(EditAnywhere, Category = "Look")
+	TObjectPtr<UStaticMesh> MeshOverride;
 
+	UPROPERTY(EditAnywhere, Category = "Look")
+	TObjectPtr<UMaterialInterface> CoreMaterial;
+
+	/** Diameter in cm. Keep it under the track's InnerRadius * 2 (default 240). */
+	UPROPERTY(EditAnywhere, Category = "Look", meta = (ClampMin = "10.0", Units = "cm"))
+	float CoreDiameter = 160.f;
+
+	virtual void OnConstruction(const FTransform& Transform) override;
 };

@@ -58,6 +58,11 @@ struct FCyberBeatSection
     /** 0 = no enemies, 1 = every beat, 2 = every other beat, 4 = one per bar (in 4/4). */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Section", meta = (ClampMin = "0"))
     int32 EnemyEveryNBeats = 2;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Music Event")
+    int32 Lane = -1;
+
+    
 };
 
 UCLASS(BlueprintType)
