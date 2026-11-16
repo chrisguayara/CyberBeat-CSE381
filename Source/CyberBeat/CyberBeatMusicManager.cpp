@@ -294,3 +294,13 @@ void ACyberBeatMusicManager::HandleAudioFinished()
 	bSongFinished = true;
 	OnSongFinished.Broadcast();
 }
+
+float ACyberBeatMusicManager::GetSongDurationSeconds() const
+{
+    if (!MusicComponent || !MusicComponent->GetSound())
+    {
+        return 0.f;
+    }
+
+    return MusicComponent->GetSound()->GetDuration();
+}   

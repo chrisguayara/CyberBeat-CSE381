@@ -6,6 +6,7 @@
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/ProgressBar.h"
 #include "CyberBeatMusicManager.h"
 
 
@@ -93,6 +94,25 @@ void UCyberBeatHUDWidget::ShowTiming(EBeatTimingResult Result)
 void UCyberBeatHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
     Super::NativeTick(MyGeometry, InDeltaTime);
+
+    if (MusicManager && SongProgressBar)
+    {
+        const float SongTime = MusicManager->GetSongTimeSeconds();
+        const float SongDuration = MusicManager->GetSongDurationSeconds();
+
+        if (SongDuration > 0.f)
+        {
+            const float Progress = FMath::Clamp(
+                SongTime / SongDuration,
+                0.f,
+                1.f
+            );
+
+            SongProgressBar->SetPercent(Progress);
+        }
+    }
+
+
 
     if (!MusicManager || !BeatIndicator)
     {

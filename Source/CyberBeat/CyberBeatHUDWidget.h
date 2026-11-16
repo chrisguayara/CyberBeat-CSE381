@@ -12,7 +12,7 @@ class UTextBlock;
 class ACyberBeatPlayerState;
 class UImage;
 class ACyberBeatMusicManager;
-
+class UProgressBar;
 
 
 /**
@@ -35,7 +35,8 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UImage> InnerBeatCircle;
 
-    
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UProgressBar> SongProgressBar;
 
     UPROPERTY()
     TObjectPtr<ACyberBeatMusicManager> MusicManager;

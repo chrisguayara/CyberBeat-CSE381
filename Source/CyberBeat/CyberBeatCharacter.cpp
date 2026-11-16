@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
-#include "CyberBeatCore.h"
+
 #include "CyberBeatCharacter.h"
+#include "CyberBeatCore.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
 #include "Components/DecalComponent.h"

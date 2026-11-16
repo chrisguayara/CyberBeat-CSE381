@@ -44,6 +44,9 @@ public:
     UFUNCTION(BlueprintPure, Category = "Music Manager")
     float GetSongTimeSeconds() const;
 
+    UFUNCTION(BlueprintPure, Category = "Music Manager")
+    float GetSongDurationSeconds() const;
+
     UFUNCTION(BlueprintCallable, Category = "Music Manager")
     EBeatTimingResult JudgeInput(float& TimingOffset) const;
 
