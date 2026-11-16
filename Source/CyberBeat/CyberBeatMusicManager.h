@@ -16,6 +16,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(
     BeatNumber
 );
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCyberBeatSongFinished);
 
 UCLASS()
 class CYBERBEAT_API ACyberBeatMusicManager : public AActor
@@ -30,6 +31,9 @@ public:
 
     UPROPERTY(BlueprintAssignable, Category = "Music Manager")
     FOnCyberBeat OnBeat;
+
+    UPROPERTY(BlueprintAssignable, Category = "Music Manager")
+    FOnCyberBeatSongFinished OnSongFinished;
 
     UFUNCTION(BlueprintPure, Category = "Music Manager")
     int32 GetCurrentBeat() const { return CurrentBeat; }
@@ -93,4 +97,10 @@ private:
     bool bFailed = false;
     float FailElapsed = 0.f;
     float FrozenSongTime = 0.f;
+
+    UFUNCTION()
+    void HandleAudioFinished();
+
+    bool bSongFinished = false;
+    bool bEnding = false;
 };

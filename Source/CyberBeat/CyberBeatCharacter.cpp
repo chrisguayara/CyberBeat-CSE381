@@ -1,5 +1,5 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
-
+#include "CyberBeatCore.h"
 #include "CyberBeatCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
@@ -73,7 +73,14 @@ void ACyberBeatCharacter::BeginPlay()
 
 	if (MusicManager)
 	{
+		MusicManager->OnSongFinished.AddDynamic(this, &ACyberBeatCharacter::HandleSongFinished);
 		UE_LOG(LogTemp, Warning, TEXT("Music Manager exists"));
+	}
+
+	if (ACyberBeatCore* Core = Cast<ACyberBeatCore>(
+			UGameplayStatics::GetActorOfClass(GetWorld(), ACyberBeatCore::StaticClass())))
+	{
+		Core->OnCoreDestroyed.AddDynamic(this, &ACyberBeatCharacter::HandleCoreDestroyed);
 	}
 
 
@@ -218,6 +225,7 @@ void ACyberBeatCharacter::Tick(float DeltaSeconds)
 
 void ACyberBeatCharacter::TryAttack()
 {
+	if (bGameEnded) return;
 	PlayAttackEffect();
 
 	if (!MusicManager)
@@ -285,4 +293,39 @@ void ACyberBeatCharacter::PlayAttackEffect()
 	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 		GetWorld(),AttackSlashEffect,SpawnLocation,SpawnRotation,FVector(1.0f),true,true,ENCPoolMethod::None);
 
+}
+
+void ACyberBeatCharacter::HandleSongFinished()
+{
+	if (bGameEnded) return;
+	bGameEnded = true;
+	ShowEndScreen(SuccessWidgetClass);
+}
+
+void ACyberBeatCharacter::HandleCoreDestroyed()
+{
+	if (bGameEnded) return;
+	bGameEnded = true;
+
+	if (MusicManager)
+	{
+		MusicManager->StartFailSequence();
+	}
+	ShowEndScreen(GameOverWidgetClass);
+}
+
+void ACyberBeatCharacter::ShowEndScreen(TSubclassOf<UUserWidget> WidgetClass)
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC || !WidgetClass) return;
+
+	if (UUserWidget* Screen = CreateWidget<UUserWidget>(PC, WidgetClass))
+	{
+		Screen->AddToViewport(100);
+		PC->bShowMouseCursor = true;
+
+		FInputModeUIOnly Mode;
+		Mode.SetWidgetToFocus(Screen->TakeWidget());
+		PC->SetInputMode(Mode);
+	}
 }

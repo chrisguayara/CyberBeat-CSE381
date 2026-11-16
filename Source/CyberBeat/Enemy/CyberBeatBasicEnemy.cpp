@@ -1,10 +1,10 @@
 #include "CyberBeatBasicEnemy.h"
 #include "CyberBeatMusicManager.h"
+#include "CyberBeatCore.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "UObject/ConstructorHelpers.h"
-#include "CyberBeatCore.h"
 #include "Kismet/GameplayStatics.h"
 
 ACyberBeatBasicEnemy::ACyberBeatBasicEnemy()
@@ -45,8 +45,9 @@ void ACyberBeatBasicEnemy::Tick(float DeltaTime)
 
     if (!IsValid(Manager)) return;
 
-    // constant speed: it covers (SpawnRadius - HitRadius) in TravelTime seconds and is
-    // exactly at HitRadius when the song clock reaches ArrivalSongTime.
+    // After a fail the song clock reads 0, which would fling enemies back out. Freeze them instead.
+    if (Manager->IsFailed()) return;
+
     const float Now = Manager->GetSongTimeSeconds();
     const float Speed = (SpawnRadius - HitRadius) / TravelTime;
     const float Radius = HitRadius + (ArrivalSongTime - Now) * Speed;
@@ -68,7 +69,12 @@ void ACyberBeatBasicEnemy::Kill()
 
 void ACyberBeatBasicEnemy::ReachCore()
 {
-    // TODO: once the core exists, apply Damage to it here.
     UE_LOG(LogTemp, Warning, TEXT("%s reached the core (damage %d)"), *GetName(), Damage);
+
+    if (ACyberBeatCore* Core = Cast<ACyberBeatCore>(
+            UGameplayStatics::GetActorOfClass(GetWorld(), ACyberBeatCore::StaticClass())))
+    {
+        Core->ApplyDamage(Damage);
+    }
     Destroy();
 }

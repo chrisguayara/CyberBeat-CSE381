@@ -17,15 +17,18 @@ void ACyberBeatPlayerState::RegisterHit(EBeatTimingResult Result)
     case EBeatTimingResult::Perfect:
         TotalScore += 1000;
         Combo++;
+        PerfectCount++;
         break;
 
     case EBeatTimingResult::Good:
         TotalScore += 500;
         Combo++;
+        GoodCount++;
         break;
 
     case EBeatTimingResult::Miss:
         Combo = 0;
+        MissCount++;
         break;
     }
 
@@ -35,4 +38,10 @@ void ACyberBeatPlayerState::RegisterHit(EBeatTimingResult Result)
 
     UE_LOG(LogTemp, Warning,TEXT("Total Score: %d, Combo: %d, Best Combo: %d"),
         TotalScore, Combo, BestCombo);
+}
+
+float ACyberBeatPlayerState::GetAccuracyPercent() const
+{
+    const int32 Total = PerfectCount + GoodCount + MissCount;
+    return Total > 0 ? 100.f * (PerfectCount + GoodCount) / Total : 0.f;
 }

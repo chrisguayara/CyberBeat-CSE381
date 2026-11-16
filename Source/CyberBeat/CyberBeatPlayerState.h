@@ -34,6 +34,19 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Score")
     int32 BestCombo = 0;
 
+    UPROPERTY(BlueprintReadOnly, Category = "Score")
+    int32 PerfectCount = 0;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Score")
+    int32 GoodCount = 0;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Score")
+    int32 MissCount = 0;
+
+    /** 0 to 100. Perfect and Good swings out of all swings. */
+    UFUNCTION(BlueprintPure, Category = "Score")
+    float GetAccuracyPercent() const;
+
     UPROPERTY(BlueprintAssignable, Category = "Score")
     FOnScoreUpdated OnScoreUpdated;
 

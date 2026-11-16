@@ -8,7 +8,7 @@
 
 ACyberBeatMusicManager::ACyberBeatMusicManager()
 {
-    PrimaryActorTick.bCanEverTick = false;
+    PrimaryActorTick.bCanEverTick = true;
 }
 
 void ACyberBeatMusicManager::BeginPlay()
@@ -64,6 +64,8 @@ void ACyberBeatMusicManager::BeginPlay()
         MusicComponent->bAutoActivate = false;
         MusicComponent->RegisterComponent();
 
+        MusicComponent->OnAudioFinished.AddDynamic(this, &ACyberBeatMusicManager::HandleAudioFinished);
+
         if (bStartMusicAutomatically)
         {
             MusicStartTime = GetWorld()->GetTimeSeconds();
@@ -89,8 +91,11 @@ void ACyberBeatMusicManager::EndPlay(
     const EEndPlayReason::Type EndPlayReason
 )
 {
+
+
     if (MusicComponent)
     {
+        bEnding = true;
         MusicComponent->Stop();
     }
 
@@ -281,4 +286,11 @@ void ACyberBeatMusicManager::Tick(float DeltaTime)
     {
         MusicComponent->Stop();
     }
+}
+
+void ACyberBeatMusicManager::HandleAudioFinished()
+{
+	if (bFailed || bEnding || bSongFinished) return;
+	bSongFinished = true;
+	OnSongFinished.Broadcast();
 }
