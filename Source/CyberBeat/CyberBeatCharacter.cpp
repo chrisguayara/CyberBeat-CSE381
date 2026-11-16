@@ -16,6 +16,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
 #include "CyberBeatPlayerState.h"
+#include "CyberBeatGameOverWidget.h"
 #include "NiagaraComponent.h"
 #include "Engine/Engine.h"
 #include "CyberBeatHUDWidget.h"
@@ -322,6 +323,15 @@ void ACyberBeatCharacter::ShowEndScreen(TSubclassOf<UUserWidget> WidgetClass)
 
 	if (UUserWidget* Screen = CreateWidget<UUserWidget>(PC, WidgetClass))
 	{
+
+		if (UCyberBeatGameOverWidget* GameOverScreen =Cast<UCyberBeatGameOverWidget>(Screen))
+		{
+			if (ACyberBeatPlayerState* ScoreState =GetPlayerState<ACyberBeatPlayerState>())
+			{
+				GameOverScreen->SetFinalScore(ScoreState->TotalScore);
+			}
+		}
+
 		Screen->AddToViewport(100);
 		PC->bShowMouseCursor = true;
 

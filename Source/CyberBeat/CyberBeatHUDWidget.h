@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/ProgressBar.h"
+#include "CyberBeatCore.h"
 #include "CyberBeatSongData.h"
 #include "CyberBeatHUDWidget.generated.h"
 
@@ -42,6 +44,11 @@ protected:
     TObjectPtr<ACyberBeatMusicManager> MusicManager;
 
 
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UProgressBar> CoreHealthBar;
+
+    UPROPERTY()
+    TObjectPtr<ACyberBeatCore> CoreActor;
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UTextBlock> ScoreText;
@@ -68,4 +75,7 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "HUD")
     void ShowTiming(EBeatTimingResult Result);
+
+    UFUNCTION()
+    void HandleCoreHealthChanged(int32 Health, int32 MaxHealth);
 };

@@ -7,6 +7,7 @@
 #include "Components/Image.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/ProgressBar.h"
+#include "CyberBeatCore.h"
 #include "CyberBeatMusicManager.h"
 
 
@@ -33,6 +34,22 @@ void UCyberBeatHUDWidget::NativeConstruct()
         GetWorld(),ACyberBeatMusicManager::StaticClass());
 
     MusicManager = Cast<ACyberBeatMusicManager>(FoundActor);
+
+    // Find the core
+    AActor* FoundCore = UGameplayStatics::GetActorOfClass(
+        GetWorld(),
+        ACyberBeatCore::StaticClass()
+    );
+
+    CoreActor = Cast<ACyberBeatCore>(FoundCore);
+
+    if (CoreActor)
+    {
+        CoreActor->OnHealthChanged.AddDynamic(
+            this,&UCyberBeatHUDWidget::HandleCoreHealthChanged);
+        HandleCoreHealthChanged(CoreActor->GetHealth(), CoreActor->GetMaxHealth());
+    }
+    
 
     
 }
@@ -144,3 +161,14 @@ void UCyberBeatHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaT
 
     InnerBeatCircle->SetColorAndOpacity(CircleColor);
 }
+
+
+void UCyberBeatHUDWidget::HandleCoreHealthChanged(int32 Health, int32 MaxHealth)
+{
+    if (CoreHealthBar && MaxHealth > 0)
+    {
+        float HealthPercent = static_cast<float>(Health) / MaxHealth;
+        CoreHealthBar->SetPercent( FMath::Clamp(HealthPercent, 0.0f, 1.0f) );
+    }
+}
+
