@@ -21,7 +21,7 @@ public:
 protected:
     virtual void BeginPlay() override;
 
-    void SpawnForEvent(float EventTime);
+    void SpawnForEvent(float EventTime, int32 EventLane);
 
     UPROPERTY(EditAnywhere, Category = "Spawning")
     TSubclassOf<ACyberBeatBasicEnemy> EnemyClass;

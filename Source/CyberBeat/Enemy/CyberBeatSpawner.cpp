@@ -80,16 +80,20 @@ void ACyberBeatSpawner::Tick(float DeltaTime)
             continue;
         }
 
-        SpawnForEvent(Event.TimeSeconds);
+        SpawnForEvent(Event.TimeSeconds, Event.Lane);
     }
 }
 
-void ACyberBeatSpawner::SpawnForEvent(float EventTime)
+void ACyberBeatSpawner::SpawnForEvent(float EventTime, int32 EventLane)
 {
     if (!EnemyClass) return;
 
     int32 Lane;
-    if (LanePattern.Num() > 0)
+    if (EventLane >= 0)
+    {
+        Lane = EventLane % ACyberBeatTrack::NumLanes;   // lane from the chart
+    }
+    else if (LanePattern.Num() > 0)
     {
         Lane = FMath::Abs(LanePattern[PatternIndex % LanePattern.Num()]) % ACyberBeatTrack::NumLanes;
         ++PatternIndex;
@@ -98,6 +102,7 @@ void ACyberBeatSpawner::SpawnForEvent(float EventTime)
     {
         Lane = Stream.RandRange(0, ACyberBeatTrack::NumLanes - 1);
     }
+
     const float AngleDeg = Lane * 45.f + LaneAngleOffset;
     const float Rad = FMath::DegreesToRadians(AngleDeg);
 
