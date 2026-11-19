@@ -236,7 +236,8 @@ void ACyberBeatCharacter::TryAttack()
 		return;
 	}
 
-	const float Now = MusicManager->GetSongTimeSeconds();
+	if (SwingSound) { UGameplayStatics::PlaySound2D(this, SwingSound); }
+
 
 	// finds the enemy in my lane whose arrival time is closest to now
 	ACyberBeatBasicEnemy* Best = nullptr;
@@ -244,21 +245,23 @@ void ACyberBeatCharacter::TryAttack()
 	for (TActorIterator<ACyberBeatBasicEnemy> It(GetWorld()); It; ++It)
 	{
 		ACyberBeatBasicEnemy* Enemy = *It;
-		const float LaneDelta = FMath::Abs(FMath::FindDeltaAngleDegrees(TargetAngle, Enemy->GetLaneAngleDeg()));
-		if (LaneDelta > 22.5f) continue;   // not my lane
+		
+		if (!Enemy->IsInAttackRange()) continue;   // too far away
 
-		const float Diff = FMath::Abs(Now - Enemy->GetArrivalSongTime());
+		const float LaneDelta = FMath::Abs(FMath::FindDeltaAngleDegrees(TargetAngle, Enemy->GetLaneAngleDeg()));
+		if (LaneDelta > 22.5f) continue;   
+		const float Diff = FMath::Abs(MusicManager->GetSongTimeSeconds() - Enemy->GetArrivalSongTime());
 		if (Diff < BestDiff) { BestDiff = Diff; Best = Enemy; }
 	}
 
-	if (SwingSound) { UGameplayStatics::PlaySound2D(this, SwingSound); }
+	
 
 	EBeatTimingResult Result = EBeatTimingResult::Miss;   // no enemy in my lane = whiff
 	float OffsetMs = 0.f;
 	if (Best)
 	{
-		Result = MusicManager->JudgeAgainstTime(Best->GetArrivalSongTime(), OffsetMs);
-		if (Result != EBeatTimingResult::Miss)
+		Result = MusicManager->JudgeAgainstTime(Best->GetArrivalSongTime(),OffsetMs);
+
 		{
 			Best->Kill();
 			if (HitSound) { UGameplayStatics::PlaySound2D(this, HitSound); }

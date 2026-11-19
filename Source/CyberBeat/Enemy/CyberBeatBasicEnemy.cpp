@@ -37,6 +37,38 @@ void ACyberBeatBasicEnemy::Init(ACyberBeatMusicManager* InManager, const FVector
     HitRadius = InHitRadius;
     ArrivalSongTime = InArrivalSongTime;
     TravelTime = FMath::Max(InTravelTime, 0.1f);
+
+    CurrentRadius = SpawnRadius;
+    StartRadius = SpawnRadius;
+    TargetRadius = SpawnRadius;
+    MoveElapsed = 0.f;
+    BeatsSinceSpawn = 0;
+    bMoving = false;
+    bReachedCore = false;
+    bInAttackRange = false;
+    bHasReachedHitZone = false;
+
+
+    if (!IsValid(Manager)) return;
+
+    // Calculate how many beats remain until the hit zone.
+    const float BPM = Manager->GetBPM();
+    const float RemainingTime = FMath::Max(ArrivalSongTime - Manager->GetSongTimeSeconds(),0.0f );
+
+    const float TimeToHit = RemainingTime > 0.f ? RemainingTime: TravelTime;
+
+    const float BeatInterval = 60.f / FMath::Max(BPM, 1.f);
+    BeatsToHitZone = FMath::Max(1,FMath::RoundToInt(TimeToHit / BeatInterval));
+
+    const int32 MovementSteps = FMath::Max(1,FMath::DivideAndRoundUp(BeatsToHitZone, BeatsPerMove));
+
+    // Divide the distance into equal beat based steps.
+    StepDistance = (SpawnRadius - HitRadius) / MovementSteps;
+    LastProcessedBeat = Manager->GetCurrentBeat();
+    Manager->OnBeat.AddDynamic(this, &ACyberBeatBasicEnemy::HandleBeat );
+
+    UpdateEnemyPosition();
+
 }
 
 void ACyberBeatBasicEnemy::Tick(float DeltaTime)
@@ -48,18 +80,33 @@ void ACyberBeatBasicEnemy::Tick(float DeltaTime)
     // After a fail the song clock reads 0, which would fling enemies back out. Freeze them instead.
     if (Manager->IsFailed()) return;
 
-    const float Now = Manager->GetSongTimeSeconds();
-    const float Speed = (SpawnRadius - HitRadius) / TravelTime;
-    const float Radius = HitRadius + (ArrivalSongTime - Now) * Speed;
+    if (!bMoving) return;
 
-    if (Radius <= CoreRadius)
+    MoveElapsed += DeltaTime;
+
+    const float Alpha = FMath::Clamp(MoveElapsed / BeatMoveDuration,0.f,1.f );
+
+    CurrentRadius = FMath::Lerp(StartRadius,TargetRadius,Alpha);
+    UpdateEnemyPosition();
+
+    if (Alpha >= 1.f)
     {
-        ReachCore();
-        return;
-    }
+        bMoving = false;
+        CurrentRadius = TargetRadius;
 
-    const float Rad = FMath::DegreesToRadians(LaneAngleDeg);
-    SetActorLocation(Center + FVector(FMath::Cos(Rad), FMath::Sin(Rad), 0.f) * Radius);
+        // The enemy has arrived at the red attack line.
+        if (!bHasReachedHitZone && CurrentRadius <= HitRadius + 0.1f)
+        {
+            bHasReachedHitZone = true;
+            bInAttackRange = true;
+    
+        }
+
+        if (CurrentRadius <= CoreRadius)
+        {
+            ReachCore();
+        }
+    }
 }
 
 void ACyberBeatBasicEnemy::Kill()
@@ -77,4 +124,65 @@ void ACyberBeatBasicEnemy::ReachCore()
         Core->ApplyDamage(Damage);
     }
     Destroy();
+}
+
+void ACyberBeatBasicEnemy::HandleBeat(int32 BeatNumber)
+{
+    if (!IsValid(Manager) || Manager->IsFailed()) return;
+    if (BeatNumber <= LastProcessedBeat) return;
+
+    LastProcessedBeat = BeatNumber;
+
+    BeatsSinceSpawn++;
+
+    if (BeatsSinceSpawn < BeatsPerMove) return;
+
+    BeatsSinceSpawn = 0;
+
+    // If the enemy was waiting at the red line, it now moves in.
+    if (bInAttackRange)
+    {
+        bInAttackRange = false;
+    }
+
+    if (bMoving) return;
+
+    StartRadius = CurrentRadius;
+
+    if (!bHasReachedHitZone)
+    {
+        // Approach the red line, but dont pass it
+        TargetRadius = FMath::Max(HitRadius,CurrentRadius - StepDistance);
+    }
+    else
+    {
+        // After the attack window, continue toward the core.
+        TargetRadius = FMath::Max(CoreRadius,CurrentRadius - StepDistance);
+    }
+
+    MoveElapsed = 0.f;
+    bMoving = true;
+}
+
+void ACyberBeatBasicEnemy::UpdateEnemyPosition()
+{
+    const float Rad = FMath::DegreesToRadians(LaneAngleDeg);
+    const FVector Direction(FMath::Cos(Rad), FMath::Sin(Rad), 0.f);
+    SetActorLocation(Center + Direction * CurrentRadius);
+}
+
+void ACyberBeatBasicEnemy::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    if (IsValid(Manager))
+    {
+        Manager->OnBeat.RemoveDynamic( this,&ACyberBeatBasicEnemy::HandleBeat );
+    }
+
+    Super::EndPlay(EndPlayReason);
+}
+
+
+bool ACyberBeatBasicEnemy::IsInAttackRange() const
+{
+    return bInAttackRange;
 }

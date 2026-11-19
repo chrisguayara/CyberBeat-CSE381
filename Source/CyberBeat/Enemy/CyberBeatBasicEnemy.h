@@ -23,6 +23,7 @@ public:
     ACyberBeatBasicEnemy();
 
     virtual void Tick(float DeltaTime) override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
     /** Called by the spawner right after spawning. */
     void Init(ACyberBeatMusicManager* InManager, const FVector& InCenter, float InLaneAngleDeg,
@@ -34,13 +35,25 @@ public:
     /** Song time (seconds) at which this enemy should be hit. */
     float GetArrivalSongTime() const { return ArrivalSongTime; }
 
+    UFUNCTION(BlueprintPure, Category = "Enemy")
+    bool IsInAttackRange() const;
+
     /** Called by the character when the player kills it in the success zone. */
     UFUNCTION(BlueprintCallable, Category = "Enemy")
     void Kill();
 
+ 
+
 protected:
     /** Called when it reaches the core. Damage the core here once the core exists. */
     void ReachCore();
+
+    /** Called when the music manager detects a new beat. */
+    UFUNCTION()
+    void HandleBeat(int32 BeatNumber);
+
+
+    void UpdateEnemyPosition();
 
     UPROPERTY(VisibleAnywhere, Category = "Components")
     TObjectPtr<USphereComponent> Collision;
@@ -58,10 +71,46 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Tuning", meta = (ClampMin = "0"))
     int32 Damage = 1;
 
+    /** How long the movement animation lasts after each beat.*/
+    UPROPERTY(EditAnywhere, Category = "Movement", meta = (ClampMin = "0.01", Units = "s"))
+    float BeatMoveDuration = 0.15f;
+
+    /** Number of beats between each movement step. */
+    UPROPERTY(EditAnywhere, Category = "Movement", meta = (ClampMin = "1"))
+    int32 BeatsPerMove = 1;
+
+    // Counts beats since this enemy spawned.
+    int32 BeatsSinceSpawn = 0;
+
+    // Tracks whether this enemy has already reached the red line.
+    bool bHasReachedHitZone = false;
+
     FVector Center = FVector::ZeroVector;
     float LaneAngleDeg = 0.f;
     float SpawnRadius = 1500.f;
     float HitRadius = 500.f;
     float ArrivalSongTime = 0.f;
     float TravelTime = 2.f;
+
+    /** Current and target positions along the enemy's lane. */
+    float CurrentRadius = 1500.f;
+    float StartRadius = 1500.f;
+    float TargetRadius = 1500.f;
+
+    /** Distance traveled per beat. */
+    float StepDistance = 100.f;
+
+    /** Number of beats required to reach the hit zone. */
+    int32 BeatsToHitZone = 1;
+
+    /** Last beat processed by this enemy. */
+    int32 LastProcessedBeat = -1;
+
+    /** Animation progress between beats. */
+    float MoveElapsed = 0.f;
+
+    bool bMoving = false;
+    bool bReachedCore = false;
+    bool bInAttackRange = false;
+
 };
