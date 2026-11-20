@@ -39,6 +39,7 @@ void ACyberBeatSpawner::BeginPlay()
     Center.Z += SpawnZ;
 
     Stream.Initialize(LaneSeed);
+    FlyStream.Initialize(LaneSeed + 1);
     NextEventIndex = 0;
 }
 
@@ -103,6 +104,12 @@ void ACyberBeatSpawner::SpawnForEvent(float EventTime, int32 EventLane)
         Lane = Stream.RandRange(0, ACyberBeatTrack::NumLanes - 1);
     }
 
+    TSubclassOf<ACyberBeatBasicEnemy> ClassToSpawn = EnemyClass;
+    if (FlyingEnemyClass && FlyStream.FRand() < FlyingChance)
+    {
+        ClassToSpawn = FlyingEnemyClass;
+    }
+
     const float AngleDeg = Lane * 45.f + LaneAngleOffset;
     const float Rad = FMath::DegreesToRadians(AngleDeg);
 
@@ -112,7 +119,7 @@ void ACyberBeatSpawner::SpawnForEvent(float EventTime, int32 EventLane)
     Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
     if (ACyberBeatBasicEnemy* Enemy = GetWorld()->SpawnActor<ACyberBeatBasicEnemy>(
-            EnemyClass, SpawnLocation, FRotator(0.f, AngleDeg + 180.f, 0.f), Params))
+        ClassToSpawn, SpawnLocation, FRotator(0.f, AngleDeg + 180.f, 0.f), Params))
     {
         Enemy->Init(Manager, Center, AngleDeg, SpawnRadius, HitRadius, EventTime, TravelTime);
     }

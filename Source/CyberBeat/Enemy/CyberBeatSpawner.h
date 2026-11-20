@@ -26,6 +26,13 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Spawning")
     TSubclassOf<ACyberBeatBasicEnemy> EnemyClass;
 
+    UPROPERTY(EditAnywhere, Category = "Spawning")
+    TSubclassOf<ACyberBeatBasicEnemy> FlyingEnemyClass;
+
+    /** Chance 0-1 that a spawn is a flying enemy. */
+    UPROPERTY(EditAnywhere, Category = "Spawning", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+    float FlyingChance = 0.3f;
+
     /** How far from the center enemies appear. Must be larger than the track radius. */
     UPROPERTY(EditAnywhere, Category = "Spawning", meta = (ClampMin = "0.0", Units = "cm"))
     float SpawnRadius = 1500.f;
@@ -65,6 +72,7 @@ protected:
     float HitRadius = 500.f;
     int32 NextEventIndex = 0;
     FRandomStream Stream;
+    FRandomStream FlyStream;
 
     UPROPERTY(EditAnywhere, Category = "Spawning")
     TArray<int32> LanePattern;

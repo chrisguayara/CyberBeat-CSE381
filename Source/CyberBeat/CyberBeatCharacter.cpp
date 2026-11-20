@@ -129,52 +129,6 @@ void ACyberBeatCharacter::Tick(float DeltaSeconds)
 	const APlayerController* PC = Cast<APlayerController>(GetController());
 	if (!PC) return;
 
-	// Update on-screen beat indicator
-	if (MusicManager && GEngine)
-	{
-		const float BPM = MusicManager->GetBPM();
-		const float SongTime = MusicManager->GetSongTimeSeconds();
-
-		if (BPM > 0.0f)
-		{
-		
-			float BeatProgress = FMath::Fmod(SongTime * BPM / 60.0f,1.0f);
-
-			if (BeatProgress < 0.0f)
-			{
-				BeatProgress += 1.0f;
-			}
-
-			// Move indicator toward the center
-			const int32 MarkerPosition = FMath::Clamp(
-				FMath::RoundToInt(BeatProgress * 10.0f),0,10);
-
-			FString TimingBar = TEXT("[");
-
-			for (int32 i = 0; i <= 20; i++)
-			{
-				if (i == MarkerPosition)
-				{
-					TimingBar += TEXT("O");
-				}
-				else if (i == 10)
-				{
-					TimingBar += TEXT("|");
-				}
-				else
-				{
-					TimingBar += TEXT("-");
-				}
-			}
-
-			TimingBar += TEXT("]");
-
-			FString IndicatorText = FString::Printf(
-				TEXT("NEXT BEAT  %s "),*TimingBar);
-
-			GEngine->AddOnScreenDebugMessage(9001,0.1f,FColor::Cyan,IndicatorText);
-		}
-	}
 
 	const bool bW = PC->IsInputKeyDown(EKeys::W);
 	const bool bA = PC->IsInputKeyDown(EKeys::A);
@@ -188,8 +142,13 @@ void ACyberBeatCharacter::Tick(float DeltaSeconds)
 
 	if (bNewAttack)
 	{
-		TryAttack();
+		TryAttack(false);
 	}
+
+	const bool bAir = PC->IsInputKeyDown(EKeys::RightMouseButton);
+	const bool bNewAir = bAir && !bAirAttackWasDown;
+	bAirAttackWasDown = bAir;
+	if (bNewAir) { TryAttack(true); }
 
 	const bool bNewW = bW && !bWWasDown;
 	const bool bNewA = bA && !bAWasDown;
@@ -225,7 +184,7 @@ void ACyberBeatCharacter::Tick(float DeltaSeconds)
 	SetActorRotation(FRotator(0.f, CurrentAngle, 0.f));
 }
 
-void ACyberBeatCharacter::TryAttack()
+void ACyberBeatCharacter::TryAttack(bool bAirAttack)
 {
 	if (bGameEnded) return;
 	PlayAttackEffect();
@@ -247,6 +206,7 @@ void ACyberBeatCharacter::TryAttack()
 		ACyberBeatBasicEnemy* Enemy = *It;
 		
 		if (!Enemy->IsInAttackRange()) continue;   // too far away
+		if (Enemy->RequiresAirAttack() != bAirAttack) continue;   // wrong attack type for this enemy
 
 		const float LaneDelta = FMath::Abs(FMath::FindDeltaAngleDegrees(TargetAngle, Enemy->GetLaneAngleDeg()));
 		if (LaneDelta > 22.5f) continue;   

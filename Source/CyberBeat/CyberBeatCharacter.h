@@ -58,6 +58,7 @@ protected:
 	bool bAWasDown = false;
 	bool bSWasDown = false;
 	bool bDWasDown = false;
+	bool bAirAttackWasDown = false;
 
 	UPROPERTY()
 	TObjectPtr<ACyberBeatMusicManager> MusicManager;
@@ -97,6 +98,6 @@ public:
 	UCameraComponent* GetTopDownCameraComponent() const { return TopDownCameraComponent.Get(); }
 	USpringArmComponent* GetCameraBoom() const { return CameraBoom.Get(); }
 
-	void TryAttack();
+	void TryAttack(bool bAirAttack = false);
 	void PlayAttackEffect();
 };

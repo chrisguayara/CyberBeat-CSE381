@@ -42,6 +42,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Enemy")
     void Kill();
 
+    virtual bool RequiresAirAttack() const { return false; }
  
 
 protected:
@@ -53,7 +54,7 @@ protected:
     void HandleBeat(int32 BeatNumber);
 
 
-    void UpdateEnemyPosition();
+    virtual void UpdateEnemyPosition();
 
     UPROPERTY(VisibleAnywhere, Category = "Components")
     TObjectPtr<USphereComponent> Collision;
