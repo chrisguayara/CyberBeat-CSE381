@@ -153,6 +153,12 @@ void ACyberBeatBasicEnemy::HandleBeat(int32 BeatNumber)
     {
         // Approach the red line, but dont pass it
         TargetRadius = FMath::Max(HitRadius,CurrentRadius - StepDistance);
+
+        if (TargetRadius <= HitRadius + 0.1f)
+        {
+            bInAttackRange = true;
+        }
+
     }
     else
     {

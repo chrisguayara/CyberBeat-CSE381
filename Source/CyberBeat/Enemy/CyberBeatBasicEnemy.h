@@ -35,6 +35,9 @@ public:
     /** Song time (seconds) at which this enemy should be hit. */
     float GetArrivalSongTime() const { return ArrivalSongTime; }
 
+    /** Song time when the enemy visually lands on the red line (the beat plus its move animation). */
+    float GetHitSongTime() const { return ArrivalSongTime + BeatMoveDuration; }
+
     UFUNCTION(BlueprintPure, Category = "Enemy")
     bool IsInAttackRange() const;
 

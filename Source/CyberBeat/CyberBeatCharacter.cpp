@@ -214,7 +214,7 @@ void ACyberBeatCharacter::TryAttack(bool bAirAttack)
 
 		const float LaneDelta = FMath::Abs(FMath::FindDeltaAngleDegrees(TargetAngle, Enemy->GetLaneAngleDeg()));
 		if (LaneDelta > 22.5f) continue;   
-		const float Diff = FMath::Abs(MusicManager->GetSongTimeSeconds() - Enemy->GetArrivalSongTime());
+		const float Diff = FMath::Abs(MusicManager->GetSongTimeSeconds() - Enemy->GetHitSongTime());
 		if (Diff < BestDiff) { BestDiff = Diff; Best = Enemy; }
 	}
 
@@ -224,8 +224,9 @@ void ACyberBeatCharacter::TryAttack(bool bAirAttack)
 	float OffsetMs = 0.f;
 	if (Best)
 	{
-		Result = MusicManager->JudgeAgainstTime(Best->GetArrivalSongTime(),OffsetMs);
+		Result = MusicManager->JudgeAgainstTime(Best->GetHitSongTime(),OffsetMs);
 
+		if (Result != EBeatTimingResult::Miss)
 		{
 			Best->Kill();
 			if (HitSound) { UGameplayStatics::PlaySound2D(this, HitSound); }
