@@ -51,6 +51,18 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Track")
 	float TurnSpeed = 720.f;
 
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float CameraDistance = 2800.f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float CameraPitch = -90.f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float CameraFOV = 70.f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	FVector CameraOffset = FVector::ZeroVector;
+
 	float CurrentAngle = 0.f;
 	float TargetAngle = 0.f;
 

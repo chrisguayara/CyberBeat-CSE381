@@ -45,6 +45,7 @@ ACyberBeatCharacter::ACyberBeatCharacter()
 	// Create the camera boom component
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 
+
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->SetUsingAbsoluteRotation(true);
 	CameraBoom->TargetArmLength = 800.f;
@@ -115,8 +116,11 @@ void ACyberBeatCharacter::BeginPlay()
 	// camera stays over the core instead of following you around the ring
 	CameraBoom->SetUsingAbsoluteLocation(true);
 	CameraBoom->SetWorldLocation(TrackCenter);
-	CameraBoom->SetWorldRotation(FRotator(-80.f, 0.f, 0.f));
-	CameraBoom->TargetArmLength = 1800;
+	CameraBoom->SetWorldRotation(FRotator(-90.f, 0.f, 0.f));
+	CameraBoom->TargetArmLength = 2000.f;
+	TopDownCameraComponent->SetFieldOfView(90.f);
+	TopDownCameraComponent->bConstrainAspectRatio = true;
+	TopDownCameraComponent->SetAspectRatio(1.3f);   // square view
 
 	const FVector Rel = GetActorLocation() - TrackCenter;
 	CurrentAngle = TargetAngle = FMath::RadiansToDegrees(FMath::Atan2(Rel.Y, Rel.X));
