@@ -81,6 +81,13 @@ void ACyberBeatBasicEnemy::Tick(float DeltaTime)
         MID->SetScalarParameterValue(TEXT("Intensity"), BaseIntensity + GlowCurrent * MaxGlowIntensity);
     }
 
+    if (bIsPowerup && MID)
+    {
+        PowerupTime += DeltaTime;
+        const float Pulse = 0.5f + 0.5f * FMath::Sin(PowerupTime * RimPulseSpeed * TWO_PI);
+        MID->SetScalarParameterValue(TEXT("RimAmount"), RimMax * (0.6f + 0.4f * Pulse));
+    }
+
     if (!IsValid(Manager) || Manager->IsFailed()) return;
 
     const float Now = Manager->GetSongTimeSeconds();
