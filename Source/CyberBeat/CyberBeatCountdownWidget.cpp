@@ -2,21 +2,24 @@
 #include "Components/TextBlock.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 
 void UCyberBeatCountdownWidget::Pop(const FText& Text)
 {
     if (CountText) { CountText->SetText(Text); }
     PopTime = 0.f;
 }
-
 void UCyberBeatCountdownWidget::ShowNumber(int32 N)
 {
     Pop(FText::AsNumber(N));
+    if (NumberSound) { UGameplayStatics::PlaySound2D(this, NumberSound); }
 }
 
 void UCyberBeatCountdownWidget::ShowGo()
 {
     Pop(FText::FromString(TEXT("GO!")));
+    if (GoSound) { UGameplayStatics::PlaySound2D(this, GoSound); }
     if (UWorld* W = GetWorld())
     {
         W->GetTimerManager().SetTimer(HideHandle, this, &UCyberBeatCountdownWidget::HideSelf, GoHoldSeconds, false);

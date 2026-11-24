@@ -5,6 +5,7 @@
 #include "CyberBeatCountdownWidget.generated.h"
 
 class UTextBlock;
+class USoundBase;
 
 UCLASS()
 class UCyberBeatCountdownWidget : public UUserWidget
@@ -22,6 +23,9 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Countdown") float PopDuration = 0.35f;
     UPROPERTY(EditDefaultsOnly, Category = "Countdown") float PopStartScale = 1.8f;
     UPROPERTY(EditDefaultsOnly, Category = "Countdown") float GoHoldSeconds = 0.6f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Countdown|Audio") TObjectPtr<USoundBase> NumberSound;
+    UPROPERTY(EditDefaultsOnly, Category = "Countdown|Audio") TObjectPtr<USoundBase> GoSound;
 
 private:
     void Pop(const FText& Text);
