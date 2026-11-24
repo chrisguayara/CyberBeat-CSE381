@@ -83,6 +83,25 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Movement", meta = (ClampMin = "1"))
     int32 BeatsPerMove = 1;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lane Switching")
+    bool bCanSwitchLanes = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lane Switching")
+    float LaneSwitchDuration = 0.3f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lane Switching")
+    float LaneSwitchProgress = 0.2f;
+
+    bool bHasSwitchedLanes = false;
+    bool bIsSwitchingLanes = false;
+
+    float SwitchStartAngle = 0.f;
+    float SwitchTargetAngle = 0.f;
+    float SwitchElapsedTime = 0.f;
+
+    void StartLaneSwitch();
+    void UpdateLaneSwitch(float DeltaTime);
+
     // Counts beats since this enemy spawned.
     int32 BeatsSinceSpawn = 0;
 

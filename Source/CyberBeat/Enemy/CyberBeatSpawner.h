@@ -33,6 +33,13 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Spawning", meta = (ClampMin = "0.0", ClampMax = "1.0"))
     float FlyingChance = 0.3f;
 
+    UPROPERTY(EditAnywhere, Category = "Spawning")
+    TSubclassOf<ACyberBeatBasicEnemy> SwitchingEnemyClass;
+
+    /** Chance that a spawn is a switching enemy. */
+    UPROPERTY(EditAnywhere, Category = "Spawning",meta = (ClampMin = "0.0", ClampMax = "1.0"))
+    float SwitchingChance = 0.2f;
+
     /** How far from the center enemies appear. Must be larger than the track radius. */
     UPROPERTY(EditAnywhere, Category = "Spawning", meta = (ClampMin = "0.0", Units = "cm"))
     float SpawnRadius = 1500.f;
@@ -73,6 +80,7 @@ protected:
     int32 NextEventIndex = 0;
     FRandomStream Stream;
     FRandomStream FlyStream;
+    FRandomStream SwitchStream;
 
     UPROPERTY(EditAnywhere, Category = "Spawning")
     TArray<int32> LanePattern;

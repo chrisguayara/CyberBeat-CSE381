@@ -40,6 +40,9 @@ void ACyberBeatSpawner::BeginPlay()
 
     Stream.Initialize(LaneSeed);
     FlyStream.Initialize(LaneSeed + 1);
+    SwitchStream.Initialize(LaneSeed + 2);
+
+    PatternIndex = 0;
     NextEventIndex = 0;
 }
 
@@ -105,9 +108,19 @@ void ACyberBeatSpawner::SpawnForEvent(float EventTime, int32 EventLane)
     }
 
     TSubclassOf<ACyberBeatBasicEnemy> ClassToSpawn = EnemyClass;
-    if (FlyingEnemyClass && FlyStream.FRand() < FlyingChance)
+    const float FlyProbability = FlyingEnemyClass ? FMath::Clamp(FlyingChance, 0.f, 1.f) : 0.f;
+
+    const float SwitchProbability = SwitchingEnemyClass ? FMath::Clamp(SwitchingChance, 0.f, 1.f - FlyProbability) : 0.f;
+
+    const float Roll = SwitchStream.FRand();
+
+    if (FlyingEnemyClass && Roll < FlyProbability)
     {
         ClassToSpawn = FlyingEnemyClass;
+    }
+    else if (SwitchingEnemyClass && Roll < FlyProbability + SwitchProbability)
+    {
+        ClassToSpawn = SwitchingEnemyClass;
     }
 
     const float AngleDeg = Lane * 45.f + LaneAngleOffset;

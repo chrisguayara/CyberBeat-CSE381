@@ -47,6 +47,11 @@ void ACyberBeatBasicEnemy::Init(ACyberBeatMusicManager* InManager, const FVector
     bReachedCore = false;
     bInAttackRange = false;
     bHasReachedHitZone = false;
+    bHasSwitchedLanes = false;
+    bIsSwitchingLanes = false;
+    SwitchStartAngle = LaneAngleDeg;
+    SwitchTargetAngle = LaneAngleDeg;
+    SwitchElapsedTime = 0.f;
 
 
     if (!IsValid(Manager)) return;
@@ -80,33 +85,36 @@ void ACyberBeatBasicEnemy::Tick(float DeltaTime)
     // After a fail the song clock reads 0, which would fling enemies back out. Freeze them instead.
     if (Manager->IsFailed()) return;
 
-    if (!bMoving) return;
-
-    MoveElapsed += DeltaTime;
-
-    const float Alpha = FMath::Clamp(MoveElapsed / BeatMoveDuration,0.f,1.f );
-
-    CurrentRadius = FMath::Lerp(StartRadius,TargetRadius,Alpha);
-    UpdateEnemyPosition();
-
-    if (Alpha >= 1.f)
+    UpdateLaneSwitch(DeltaTime);
+    if (bMoving)
     {
-        bMoving = false;
-        CurrentRadius = TargetRadius;
+        MoveElapsed += DeltaTime;
 
-        // The enemy has arrived at the red attack line.
-        if (!bHasReachedHitZone && CurrentRadius <= HitRadius + 0.1f)
-        {
-            bHasReachedHitZone = true;
-            bInAttackRange = true;
-    
-        }
+        const float Alpha = FMath::Clamp(MoveElapsed / FMath::Max(BeatMoveDuration, 0.01f),0.f,1.f);
 
-        if (CurrentRadius <= CoreRadius)
+        CurrentRadius = FMath::Lerp(StartRadius,TargetRadius,Alpha);
+
+        if (Alpha >= 1.f)
         {
-            ReachCore();
+            bMoving = false;
+            CurrentRadius = TargetRadius;
+
+            if (!bHasReachedHitZone && CurrentRadius <= HitRadius + 0.1f)
+            {
+                bHasReachedHitZone = true;
+                bInAttackRange = true;
+            }
+
+            if (CurrentRadius <= CoreRadius)
+            {
+                ReachCore();
+                return;
+            }
         }
     }
+
+   
+    UpdateEnemyPosition();
 }
 
 void ACyberBeatBasicEnemy::Kill()
@@ -139,13 +147,37 @@ void ACyberBeatBasicEnemy::HandleBeat(int32 BeatNumber)
 
     BeatsSinceSpawn = 0;
 
+
+    if (bMoving) return;
+
+    if (bCanSwitchLanes &&!bHasSwitchedLanes &&!bHasReachedHitZone &&!bInAttackRange)
+    {
+
+        const float TotalDistance = SpawnRadius - HitRadius;
+
+        if (TotalDistance > 0.f)
+        {
+            const float Progress =
+                (SpawnRadius - CurrentRadius) / TotalDistance;
+
+            const float TimeRemaining =
+                GetHitSongTime() - Manager->GetSongTimeSeconds();
+
+            if (Progress >= LaneSwitchProgress &&
+                CurrentRadius - StepDistance > HitRadius + 0.1f &&
+                TimeRemaining > LaneSwitchDuration)
+            {
+                StartLaneSwitch();
+            }
+        }
+    }
+
+
     // If the enemy was waiting at the red line, it now moves in.
     if (bInAttackRange)
     {
         bInAttackRange = false;
     }
-
-    if (bMoving) return;
 
     StartRadius = CurrentRadius;
 
@@ -191,4 +223,38 @@ void ACyberBeatBasicEnemy::EndPlay(const EEndPlayReason::Type EndPlayReason)
 bool ACyberBeatBasicEnemy::IsInAttackRange() const
 {
     return bInAttackRange;
+}
+
+void ACyberBeatBasicEnemy::StartLaneSwitch()
+{
+    if (!bCanSwitchLanes || bHasSwitchedLanes)
+        return;
+
+    bHasSwitchedLanes = true;
+    bIsSwitchingLanes = true;
+
+    SwitchStartAngle = LaneAngleDeg;
+
+    const float Direction = FMath::RandBool() ? 1.f : -1.f;
+
+    SwitchTargetAngle = SwitchStartAngle + Direction * 45.f;
+
+    SwitchElapsedTime = 0.f;
+}
+
+void ACyberBeatBasicEnemy::UpdateLaneSwitch(float DeltaTime)
+{
+    if (!bIsSwitchingLanes) return;
+
+    SwitchElapsedTime += DeltaTime;
+
+    const float Alpha = FMath::Clamp(SwitchElapsedTime / FMath::Max(LaneSwitchDuration, 0.01f),0.f,1.f);
+
+    LaneAngleDeg = FMath::Lerp(SwitchStartAngle,SwitchTargetAngle,Alpha);
+
+    if (Alpha >= 1.f)
+    {
+        LaneAngleDeg = FMath::UnwindDegrees(SwitchTargetAngle);
+        bIsSwitchingLanes = false;
+    }
 }
