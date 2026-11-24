@@ -6,6 +6,8 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/StaticMesh.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Kismet/KismetMaterialLibrary.h" 
+#include "Materials/MaterialParameterCollection.h"
 
 ACyberBeatTrack::ACyberBeatTrack()
 {
@@ -102,6 +104,22 @@ void ACyberBeatTrack::Tick(float DeltaSeconds)
             MarkerMIDs[i]->SetVectorParameterValue(TEXT("GlowColor"), Color);
             MarkerMIDs[i]->SetScalarParameterValue(TEXT("Intensity"), Intensity);
         }
+    }
+    if (LaneMPC && ActiveLane >= 0)
+    {
+        const float Rad = FMath::DegreesToRadians(ActiveLane * 45.f);
+        const float P = PulseAlpha[ActiveLane];
+        const FLinearColor Color = FMath::Lerp(OverlayColor, PulseColor[ActiveLane], P);
+        const float Amount = FMath::Lerp(OverlayOpacity, PulseOpacity, P);
+
+        UKismetMaterialLibrary::SetVectorParameterValue(this, LaneMPC, TEXT("TrackCenter"), FLinearColor(GetActorLocation()));
+        UKismetMaterialLibrary::SetVectorParameterValue(this, LaneMPC, TEXT("ActiveDir"), FLinearColor(FMath::Cos(Rad), FMath::Sin(Rad), 0.f));
+        UKismetMaterialLibrary::SetVectorParameterValue(this, LaneMPC, TEXT("GlowColor"), Color);
+        UKismetMaterialLibrary::SetScalarParameterValue(this, LaneMPC, TEXT("GlowAmount"), Amount);
+    }
+    else if (LaneMPC)
+    {
+        UKismetMaterialLibrary::SetScalarParameterValue(this, LaneMPC, TEXT("GlowAmount"), 0.f);
     }
 }
 

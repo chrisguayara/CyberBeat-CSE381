@@ -10,6 +10,7 @@ class UStaticMesh;
 class UStaticMeshComponent;
 class UMaterialInterface;
 class UMaterialInstanceDynamic;
+class UMaterialParameterCollection;
 
 UCLASS()
 class ACyberBeatTrack : public AActor
@@ -81,6 +82,20 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Glow") float PulseIntensity        = 20.f;
     UPROPERTY(EditAnywhere, Category = "Glow") float ActiveFadeSpeed       = 25.f;
     UPROPERTY(EditAnywhere, Category = "Glow") float PulseDecay            = 4.f;
+
+    UPROPERTY(EditAnywhere, Category = "Glow")
+    FLinearColor OverlayColor = FLinearColor(0.f, 1.f, 0.25f);
+
+    /** How strong the glow is on the lane the player is in. Keep it low for a faint look. */
+    UPROPERTY(EditAnywhere, Category = "Glow", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+    float OverlayOpacity = 0.35f;
+
+    /** Glow strength at the peak of a hit pulse. */
+    UPROPERTY(EditAnywhere, Category = "Glow", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+    float PulseOpacity = 0.85f;
+
+    UPROPERTY(EditAnywhere, Category = "Glow")
+    TObjectPtr<UMaterialParameterCollection> LaneMPC;
 
 private:
     UPROPERTY() TArray<TObjectPtr<UMaterialInstanceDynamic>> MarkerMIDs;
