@@ -76,6 +76,22 @@ protected:
     UPROPERTY(VisibleAnywhere, Category = "Components")
     TObjectPtr<UStaticMeshComponent> Mesh;
 
+    UPROPERTY(VisibleAnywhere, Category = "Components")
+    TObjectPtr<UStaticMeshComponent> Ring;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Ring") TObjectPtr<UMaterialInterface> RingMaterial;
+    UPROPERTY(EditDefaultsOnly, Category = "Ring") FLinearColor RingColor = FLinearColor(1.f, 0.2f, 0.1f);
+    UPROPERTY(EditDefaultsOnly, Category = "Ring") FLinearColor ChargedRingColor = FLinearColor(0.3f, 0.8f, 1.f);
+    UPROPERTY(EditDefaultsOnly, Category = "Ring") float RingSize = 160.f;        // cm diameter
+    UPROPERTY(EditDefaultsOnly, Category = "Ring") float RingZOffset = -95.f;     // relative to enemy center
+    UPROPERTY(EditDefaultsOnly, Category = "Ring") float RingBaseIntensity = 2.f;
+    UPROPERTY(EditDefaultsOnly, Category = "Ring") float RingGlowBoost = 6.f;     // added by the "next enemy" glow
+
+    UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> RingMID;
+
+    UPROPERTY(VisibleAnywhere, Category = "Components")
+    TObjectPtr<UStaticMeshComponent> ChargeShell;
+
     UPROPERTY()
     TObjectPtr<ACyberBeatMusicManager> Manager;
 
@@ -194,5 +210,17 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Powerup") float RimMax = 3.f;
     UPROPERTY(EditDefaultsOnly, Category = "Powerup") float RimPulseSpeed = 2.f;   // pulses per second
     UPROPERTY(EditDefaultsOnly, Category = "Powerup") float PowerupScale = 1.25f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Powerup") TObjectPtr<UMaterialInterface> ChargeMaterial; // M_ChargeShell instance
+    UPROPERTY(EditDefaultsOnly, Category = "Powerup") FLinearColor ChargeColor = FLinearColor(0.3f, 0.7f, 1.f);
+    UPROPERTY(EditDefaultsOnly, Category = "Powerup") float ChargeShellScale = 1.2f;
+    UPROPERTY(EditDefaultsOnly, Category = "Powerup") float ChargeIntensity = 4.f;
+    /** If this enemy hits the core while charged, damage is multiplied by this. */
+    UPROPERTY(EditDefaultsOnly, Category = "Powerup", meta = (ClampMin = "1")) int32 ChargedCoreDamageMultiplier = 3;
+    /** Beam also kills enemies in the lane it was fired from (it visually spans both sides). */
+    UPROPERTY(EditDefaultsOnly, Category = "Powerup") bool bBeamKillsOwnLane = true;
+
+    UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> ShellMID;
+
 
 };

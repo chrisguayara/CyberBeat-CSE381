@@ -25,6 +25,8 @@
 #include "CyberBeatTrack.h"
 #include "DrawDebugHelpers.h"
 #include "Sound/SoundBase.h"
+#include "Enemy/CyberBeatBeam.h"
+#include "CyberBeatCountdownWidget.h"
 
 ACyberBeatCharacter::ACyberBeatCharacter()
 {
@@ -127,11 +129,15 @@ void ACyberBeatCharacter::BeginPlay()
 
 	CurrentLane = ((FMath::RoundToInt(CurrentAngle / 45.f) % 8) + 8) % 8;
 	if (Track) { Track->SetActiveLane(CurrentLane); }
+
+	StartCountdown();
 }
 
 void ACyberBeatCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+
+	if (bCountingDown) { TickCountdown(DeltaSeconds); }
 
 	const APlayerController* PC = Cast<APlayerController>(GetController());
 	if (!PC) return;
@@ -184,10 +190,14 @@ void ACyberBeatCharacter::Tick(float DeltaSeconds)
 	}
 	CurrentAngle = TargetAngle;   
 
+	const FVector OldLoc = GetActorLocation();
+	bool bLaneChanged = false;
+
 	const int32 NewLane = ((FMath::RoundToInt(TargetAngle / 45.f) % 8) + 8) % 8;
 	if (NewLane != CurrentLane)
 	{
 		CurrentLane = NewLane;
+		bLaneChanged = true;
 		if (Track) { Track->SetActiveLane(CurrentLane); }
 	}
 
@@ -196,6 +206,11 @@ void ACyberBeatCharacter::Tick(float DeltaSeconds)
 	Loc.Z = GetActorLocation().Z;
 	SetActorLocation(Loc);
 	SetActorRotation(FRotator(0.f, CurrentAngle, 0.f));
+
+	if (bLaneChanged && !bGameEnded)
+	{
+		SpawnTeleportFX(OldLoc, Loc);
+	}
 
 	if (ShakeTimeLeft > 0.f)
 	{
@@ -208,7 +223,7 @@ void ACyberBeatCharacter::Tick(float DeltaSeconds)
 
 void ACyberBeatCharacter::TryAttack(bool bAirAttack)
 {
-	if (bGameEnded) return;
+	if (bGameEnded || bCountingDown) return;
 
 	PlayAttackEffect();
 
@@ -340,4 +355,70 @@ void ACyberBeatCharacter::ShowEndScreen(TSubclassOf<UUserWidget> WidgetClass)
 		Mode.SetWidgetToFocus(Screen->TakeWidget());
 		PC->SetInputMode(Mode);
 	}
+}
+
+void ACyberBeatCharacter::SpawnTeleportFX(const FVector& From, const FVector& To)
+{
+    if (DustEffect)
+    {
+        FVector P = From;
+        P.Z -= GetCapsuleComponent()->GetScaledCapsuleHalfHeight() - 10.f;   // at the feet
+        UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DustEffect, P,
+            FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::None);
+    }
+
+    if (DashTrailMaterial)
+    {
+        const FVector D = To - From;
+        const float Len = D.Size2D();
+        if (Len > 1.f)
+        {
+            const FVector Mid = (From + To) * 0.5f;
+            const float AngleDeg = FMath::RadiansToDegrees(FMath::Atan2(D.Y, D.X));
+            if (ACyberBeatBeam* Trail = GetWorld()->SpawnActor<ACyberBeatBeam>(Mid, FRotator::ZeroRotator))
+            {
+                Trail->Init(Mid, AngleDeg, Len, DashTrailWidth, DashTrailMaterial, DashTrailColor, DashTrailDuration);
+            }
+        }
+    }
+}
+
+void ACyberBeatCharacter::StartCountdown()
+{
+    APlayerController* PC = Cast<APlayerController>(GetController());
+    if (!MusicManager) return;
+
+    if (!PC || !CountdownWidgetClass)
+    {
+        MusicManager->StartSong();   // no countdown configured, just start
+        return;
+    }
+
+    CountdownWidget = CreateWidget<UCyberBeatCountdownWidget>(PC, CountdownWidgetClass);
+    if (CountdownWidget) { CountdownWidget->AddToViewport(50); }
+
+    bCountingDown = true;
+    CountdownRemaining = static_cast<float>(CountdownSeconds);
+    LastCountdownNumber = 0;
+}
+
+void ACyberBeatCharacter::TickCountdown(float DeltaSeconds)
+{
+    CountdownRemaining -= DeltaSeconds;
+
+    if (CountdownRemaining > 0.f)
+    {
+        const int32 N = FMath::CeilToInt(CountdownRemaining);
+        if (N != LastCountdownNumber)
+        {
+            LastCountdownNumber = N;
+            if (CountdownWidget) { CountdownWidget->ShowNumber(N); }
+        }
+    }
+    else
+    {
+        bCountingDown = false;
+        if (CountdownWidget) { CountdownWidget->ShowGo(); }   // removes itself after a moment
+        if (MusicManager) { MusicManager->StartSong(); }
+    }
 }

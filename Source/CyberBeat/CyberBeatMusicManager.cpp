@@ -17,63 +17,43 @@ void ACyberBeatMusicManager::BeginPlay()
 
     if (!SongData || !SongData->MusicTrack) return;
 
-    
     SongData->ParseMusicEvents();
 
-    UQuartzSubsystem* QuartzSubsystem =GetWorld()->GetSubsystem<UQuartzSubsystem>();
-
-    if (!QuartzSubsystem)
-    {
-        return;
-    }
+    UQuartzSubsystem* QuartzSubsystem = GetWorld()->GetSubsystem<UQuartzSubsystem>();
+    if (!QuartzSubsystem) return;
 
     FQuartzClockSettings ClockSettings;
-
     UQuartzClockHandle* NewClockHandle =
-        QuartzSubsystem->CreateNewClock(this,FName("CyberBeatClock"), ClockSettings, true,true );
-
-    if (!NewClockHandle)
-    {
-        return;
-    }
+        QuartzSubsystem->CreateNewClock(this, FName("CyberBeatClock"), ClockSettings, true, true);
+    if (!NewClockHandle) return;
 
     ClockHandle = NewClockHandle;
 
     FQuartzQuantizationBoundary ImmediateBoundary;
     FOnQuartzCommandEventBP EmptyCommandDelegate;
-
-    NewClockHandle->SetBeatsPerMinute(
-        this,ImmediateBoundary,EmptyCommandDelegate,NewClockHandle, SongData->BPM);
-
+    NewClockHandle->SetBeatsPerMinute(this, ImmediateBoundary, EmptyCommandDelegate, NewClockHandle, SongData->BPM);
 
     FOnQuartzMetronomeEventBP BeatDelegate;
-    BeatDelegate.BindUFunction(
-        this,FName("HandleQuartzBeat"));
+    BeatDelegate.BindUFunction(this, FName("HandleQuartzBeat"));
+    NewClockHandle->SubscribeToQuantizationEvent(this, EQuartzCommandQuantization::Beat, BeatDelegate, NewClockHandle);
 
-    NewClockHandle->SubscribeToQuantizationEvent(
-        this,EQuartzCommandQuantization::Beat,BeatDelegate,NewClockHandle);
-
-    NewClockHandle->StartClock(this, NewClockHandle);
+    // NOTE: the clock is no longer started here, StartSong() does it.
 
     MusicComponent = NewObject<UAudioComponent>(this);
-
     if (MusicComponent)
     {
         MusicComponent->SetSound(SongData->MusicTrack);
-        
         MusicComponent->bAutoActivate = false;
         MusicComponent->RegisterComponent();
-
         MusicComponent->OnAudioFinished.AddDynamic(this, &ACyberBeatMusicManager::HandleAudioFinished);
-
-        if (bStartMusicAutomatically)
-        {
-            MusicStartTime = GetWorld()->GetTimeSeconds();
-            MusicComponent->Play();
-        }
     }
 
-    UE_LOG(LogTemp,Warning,TEXT("Music Manager started. BPM: %.1f"), SongData->BPM);
+    UE_LOG(LogTemp, Warning, TEXT("Music Manager ready. BPM: %.1f"), SongData->BPM);
+
+    if (bStartMusicAutomatically || bStartPending)
+    {
+        StartSong();
+    }
 }
 
 void ACyberBeatMusicManager::HandleQuartzBeat(
@@ -304,3 +284,26 @@ float ACyberBeatMusicManager::GetSongDurationSeconds() const
 
     return MusicComponent->GetSound()->GetDuration();
 }   
+
+void ACyberBeatMusicManager::StartSong()
+{
+    if (bSongStarted) return;
+
+    // Called before BeginPlay finished (actor BeginPlay order isn't guaranteed): remember and start later.
+    if (!MusicComponent)
+    {
+        bStartPending = true;
+        return;
+    }
+
+    bSongStarted = true;
+    bStartPending = false;
+
+    if (UQuartzClockHandle* Clock = ClockHandle.Get())
+    {
+        Clock->StartClock(this, Clock);
+    }
+
+    MusicStartTime = GetWorld()->GetTimeSeconds();
+    MusicComponent->Play();
+}

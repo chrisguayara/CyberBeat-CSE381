@@ -64,6 +64,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Music Manager")
     void StartFailSequence();
 
+    UFUNCTION(BlueprintCallable, Category = "Music Manager")
+    void StartSong();
+
     bool IsFailed() const { return bFailed; }
 protected:
 
@@ -106,4 +109,7 @@ private:
 
     bool bSongFinished = false;
     bool bEnding = false;
+
+    bool bSongStarted = false;
+    bool bStartPending = false;
 };

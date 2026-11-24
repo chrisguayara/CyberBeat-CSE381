@@ -7,6 +7,8 @@
 #include "NiagaraSystem.h"
 #include "Blueprint/UserWidget.h"
 #include "CyberBeatCharacter.generated.h"
+class UCyberBeatCountdownWidget;
+
 
 class UCyberBeatHUDWidget;
 class UCameraComponent;
@@ -14,6 +16,8 @@ class USpringArmComponent;
 class ACyberBeatMusicManager;
 class USoundBase;
 class ACyberBeatTrack;
+
+class UMaterialInterface;
 
 UCLASS(abstract)
 class ACyberBeatCharacter : public ACharacter
@@ -115,6 +119,26 @@ protected:
 	int32 CurrentLane = -1;
 	float ShakeTimeLeft = 0.f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Feedback") TObjectPtr<UNiagaraSystem> DustEffect;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Feedback") TObjectPtr<UMaterialInterface> DashTrailMaterial;
+    UPROPERTY(EditDefaultsOnly, Category = "Feedback") FLinearColor DashTrailColor = FLinearColor(0.8f, 0.95f, 1.f);
+    UPROPERTY(EditDefaultsOnly, Category = "Feedback") float DashTrailWidth = 25.f;
+    UPROPERTY(EditDefaultsOnly, Category = "Feedback") float DashTrailDuration = 0.12f;
+
+    void SpawnTeleportFX(const FVector& From, const FVector& To);
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI") TSubclassOf<UCyberBeatCountdownWidget> CountdownWidgetClass;
+    UPROPERTY(EditDefaultsOnly, Category = "UI", meta = (ClampMin = "1")) int32 CountdownSeconds = 3;
+
+    UPROPERTY() TObjectPtr<UCyberBeatCountdownWidget> CountdownWidget;
+    bool bCountingDown = false;
+    float CountdownRemaining = 0.f;
+    int32 LastCountdownNumber = 0;
+
+    void StartCountdown();
+    void TickCountdown(float DeltaSeconds);
+	
 private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))

@@ -29,6 +29,21 @@ ACyberBeatBasicEnemy::ACyberBeatBasicEnemy()
     {
         Mesh->SetStaticMesh(SphereMesh.Object);
     }
+
+    Ring = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Ring"));
+    Ring->SetupAttachment(Collision);
+    Ring->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    Ring->SetCastShadow(false);
+
+    ChargeShell = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ChargeShell"));
+    ChargeShell->SetupAttachment(Mesh);          // inherits the powerup scale
+    ChargeShell->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    ChargeShell->SetCastShadow(false);
+    ChargeShell->SetVisibility(false);
+
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PlaneMesh(TEXT("/Engine/BasicShapes/Plane.Plane"));
+    if (PlaneMesh.Succeeded()) { Ring->SetStaticMesh(PlaneMesh.Object); }
+    if (SphereMesh.Succeeded()) { ChargeShell->SetStaticMesh(SphereMesh.Object); }
 }
 
 void ACyberBeatBasicEnemy::BeginPlay()
@@ -38,6 +53,19 @@ void ACyberBeatBasicEnemy::BeginPlay()
     if (GlowMaterial) { Mesh->SetMaterial(0, GlowMaterial); }
     MID = Mesh->CreateDynamicMaterialInstance(0);
     if (MID) { MID->SetVectorParameterValue(TEXT("GlowColor"), GlowColor); }
+
+    if (RingMaterial)
+    {
+        Ring->SetMaterial(0, RingMaterial);
+        Ring->SetRelativeLocation(FVector(0.f, 0.f, RingZOffset));
+        Ring->SetRelativeScale3D(FVector(RingSize / 100.f));   // plane is 100x100
+        RingMID = Ring->CreateDynamicMaterialInstance(0);
+        if (RingMID) { RingMID->SetVectorParameterValue(TEXT("GlowColor"), RingColor); }
+    }
+    else
+    {
+        Ring->SetVisibility(false);
+    }
 }
 
 void ACyberBeatBasicEnemy::Init(ACyberBeatMusicManager* InManager, const FVector& InCenter, float InLaneAngleDeg,
@@ -80,11 +108,25 @@ void ACyberBeatBasicEnemy::Tick(float DeltaTime)
     {
         MID->SetScalarParameterValue(TEXT("Intensity"), BaseIntensity + GlowCurrent * MaxGlowIntensity);
     }
+    if (RingMID)
+    {
+        RingMID->SetScalarParameterValue(TEXT("Intensity"), RingBaseIntensity + GlowCurrent * RingGlowBoost);
+    }
 
     if (bIsPowerup && MID)
     {
         PowerupTime += DeltaTime;
         const float Pulse = 0.5f + 0.5f * FMath::Sin(PowerupTime * RimPulseSpeed * TWO_PI);
+
+        if (ChargeShell->IsVisible())
+        {
+            ChargeShell->SetRelativeRotation(FRotator(PowerupTime * 60.f, PowerupTime * 110.f, 0.f));
+            ChargeShell->SetRelativeScale3D(FVector(ChargeShellScale * (1.f + 0.04f * Pulse)));
+            if (ShellMID)
+            {
+                ShellMID->SetScalarParameterValue(TEXT("Intensity"), ChargeIntensity * (0.7f + 0.3f * Pulse));
+            }
+        }
         MID->SetScalarParameterValue(TEXT("RimAmount"), RimMax * (0.6f + 0.4f * Pulse));
     }
 
@@ -152,13 +194,6 @@ void ACyberBeatBasicEnemy::Kill()
     Destroy();
 }
 
-void ACyberBeatBasicEnemy::MakePowerup()
-{
-    bIsPowerup = true;
-    Mesh->SetRelativeScale3D(Mesh->GetRelativeScale3D() * PowerupScale);
-    if (MID) { MID->SetVectorParameterValue(TEXT("RimColor"), RimColor); }
-}
-
 void ACyberBeatBasicEnemy::Detonate()
 {
     bIsPowerup = false;   // guard against double detonation
@@ -168,8 +203,11 @@ void ACyberBeatBasicEnemy::Detonate()
     {
         ACyberBeatBasicEnemy* Other = *It;
         if (Other == this) continue;
+
         const float Delta = FMath::Abs(FMath::FindDeltaAngleDegrees(LaneAngleDeg, Other->GetLaneAngleDeg()));
-        if (Delta < 22.5f || Delta > 157.5f) { Victims.Add(Other); }   // same lane or the opposite one
+        const bool bOpposite = Delta > 157.5f;
+        const bool bSame     = Delta < 22.5f;
+        if (bOpposite || (bBeamKillsOwnLane && bSame)) { Victims.Add(Other); }
     }
     for (ACyberBeatBasicEnemy* V : Victims)
     {
@@ -188,12 +226,14 @@ void ACyberBeatBasicEnemy::ReachCore()
     if (bReachedCore) return;
     bReachedCore = true;
 
-    UE_LOG(LogTemp, Warning, TEXT("%s reached the core (damage %d)"), *GetName(), Damage);
+    const int32 Dealt = bIsPowerup ? Damage * ChargedCoreDamageMultiplier : Damage;
+    UE_LOG(LogTemp, Warning, TEXT("%s reached the core (damage %d%s)"),
+        *GetName(), Dealt, bIsPowerup ? TEXT(", CHARGED") : TEXT(""));
 
     if (ACyberBeatCore* Core = Cast<ACyberBeatCore>(
             UGameplayStatics::GetActorOfClass(GetWorld(), ACyberBeatCore::StaticClass())))
     {
-        Core->ApplyDamage(Damage);
+        Core->ApplyDamage(Dealt);
     }
     Destroy();
 }
@@ -242,4 +282,21 @@ void ACyberBeatBasicEnemy::UpdateLaneSwitch(float DeltaTime)
         LaneAngleDeg = FMath::UnwindDegrees(SwitchTargetAngle);
         bIsSwitchingLanes = false;
     }
+}
+
+void ACyberBeatBasicEnemy::MakePowerup()
+{
+    bIsPowerup = true;
+    Mesh->SetRelativeScale3D(Mesh->GetRelativeScale3D() * PowerupScale);
+    if (MID) { MID->SetVectorParameterValue(TEXT("RimColor"), RimColor); }
+
+    if (ChargeMaterial)
+    {
+        ChargeShell->SetMaterial(0, ChargeMaterial);
+        ChargeShell->SetRelativeScale3D(FVector(ChargeShellScale));
+        ShellMID = ChargeShell->CreateDynamicMaterialInstance(0);
+        if (ShellMID) { ShellMID->SetVectorParameterValue(TEXT("ChargeColor"), ChargeColor); }
+        ChargeShell->SetVisibility(true);
+    }
+    if (RingMID) { RingMID->SetVectorParameterValue(TEXT("GlowColor"), ChargedRingColor); }
 }
