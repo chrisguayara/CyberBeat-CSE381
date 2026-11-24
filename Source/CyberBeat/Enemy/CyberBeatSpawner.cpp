@@ -5,6 +5,8 @@
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
 
+#include "EngineUtils.h"
+
 ACyberBeatSpawner::ACyberBeatSpawner()
 {
     PrimaryActorTick.bCanEverTick = true;
@@ -86,6 +88,8 @@ void ACyberBeatSpawner::Tick(float DeltaTime)
 
         SpawnForEvent(Event.TimeSeconds, Event.Lane);
     }
+
+    UpdateEnemyGlow();
 }
 
 void ACyberBeatSpawner::SpawnForEvent(float EventTime, int32 EventLane)
@@ -137,3 +141,26 @@ void ACyberBeatSpawner::SpawnForEvent(float EventTime, int32 EventLane)
         Enemy->Init(Manager, Center, AngleDeg, SpawnRadius, HitRadius, EventTime, TravelTime);
     }
 }
+
+void ACyberBeatSpawner::UpdateEnemyGlow()
+{
+    const float Now = Manager->GetSongTimeSeconds();
+
+    TArray<ACyberBeatBasicEnemy*> Live;
+    for (TActorIterator<ACyberBeatBasicEnemy> It(GetWorld()); It; ++It)
+    {
+        if (It->GetArrivalSongTime() >= Now - GlowGraceSeconds) { Live.Add(*It); }
+        else { It->SetGlowTarget(0.f); }
+    }
+
+    Live.Sort([](const ACyberBeatBasicEnemy& A, const ACyberBeatBasicEnemy& B)
+    {
+        return A.GetArrivalSongTime() < B.GetArrivalSongTime();
+    });
+
+    for (int32 i = 0; i < Live.Num(); ++i)
+    {
+        Live[i]->SetGlowTarget(GlowLevels.IsValidIndex(i) ? GlowLevels[i] : 0.f);
+    }
+}
+

@@ -7,6 +7,10 @@
 class UStaticMeshComponent;
 class USphereComponent;
 class ACyberBeatMusicManager;
+class UMaterialInterface; 
+class UMaterialInstanceDynamic; 
+class USoundBase;
+
 
 /**
  * An enemy that travels down one lane and reaches the hit zone (the track ring)
@@ -36,25 +40,29 @@ public:
     float GetArrivalSongTime() const { return ArrivalSongTime; }
 
     /** Song time when the enemy visually lands on the red line (the beat plus its move animation). */
-    float GetHitSongTime() const { return ArrivalSongTime + BeatMoveDuration; }
+    float GetHitSongTime() const { return ArrivalSongTime ;}
 
     UFUNCTION(BlueprintPure, Category = "Enemy")
     bool IsInAttackRange() const;
 
     /** Called by the character when the player kills it in the success zone. */
     UFUNCTION(BlueprintCallable, Category = "Enemy")
-    void Kill();
+    virtual void Kill();
 
     virtual bool RequiresAirAttack() const { return false; }
+
+    virtual void BeginPlay() override;
+    void SetGlowTarget(float InTarget) { GlowTarget = InTarget; }
+
+   
  
 
 protected:
     /** Called when it reaches the core. Damage the core here once the core exists. */
     void ReachCore();
 
-    /** Called when the music manager detects a new beat. */
-    UFUNCTION()
-    void HandleBeat(int32 BeatNumber);
+    
+    
 
 
     virtual void UpdateEnemyPosition();
@@ -135,5 +143,38 @@ protected:
     bool bMoving = false;
     bool bReachedCore = false;
     bool bInAttackRange = false;
+
+    UPROPERTY(EditAnywhere, Category = "Movement", meta = (Units = "s"))
+    float AttackRangeSeconds = 0.15f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Look")
+    TObjectPtr<UMaterialInterface> GlowMaterial;   // an instance of M_Glow
+
+    UPROPERTY(EditDefaultsOnly, Category = "Look")
+    FLinearColor GlowColor = FLinearColor(1.f, 0.2f, 0.1f);
+
+    UPROPERTY(EditDefaultsOnly, Category = "Look")
+    float BaseIntensity = 0.6f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Look")
+    float MaxGlowIntensity = 10.f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Look")
+    float GlowFadeSpeed = 8.f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Audio")
+    TObjectPtr<USoundBase> MoveSound;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Audio")
+    float MoveSoundVolume = 1.f;
+
+    UPROPERTY()
+    TObjectPtr<UMaterialInstanceDynamic> MID;
+
+    float GlowTarget = 0.f;
+    float GlowCurrent = 0.f;
+    float StepInterval = 0.5f;
+    int32 TotalSteps = 1;
+    int32 LastHopLevel = INT32_MAX;
 
 };

@@ -104,8 +104,8 @@ void ACyberBeatCharacter::BeginPlay()
 
 	GetCharacterMovement()->SetMovementMode(MOVE_None);   
 
-	if (const ACyberBeatTrack* Track = Cast<ACyberBeatTrack>(
-        UGameplayStatics::GetActorOfClass(GetWorld(), ACyberBeatTrack::StaticClass())))
+	Track = Cast<ACyberBeatTrack>(UGameplayStatics::GetActorOfClass(GetWorld(), ACyberBeatTrack::StaticClass()));
+	if (Track)
 	{
 		TrackCenter = Track->GetActorLocation();
 		TrackRadius = Track->GetPlayerRadius();
@@ -124,6 +124,9 @@ void ACyberBeatCharacter::BeginPlay()
 
 	const FVector Rel = GetActorLocation() - TrackCenter;
 	CurrentAngle = TargetAngle = FMath::RadiansToDegrees(FMath::Atan2(Rel.Y, Rel.X));
+
+	CurrentLane = ((FMath::RoundToInt(CurrentAngle / 45.f) % 8) + 8) % 8;
+	if (Track) { Track->SetActiveLane(CurrentLane); }
 }
 
 void ACyberBeatCharacter::Tick(float DeltaSeconds)
@@ -179,18 +182,34 @@ void ACyberBeatCharacter::Tick(float DeltaSeconds)
 			TargetAngle = FMath::RadiansToDegrees(FMath::Atan2(Y, X)) + LaneYawOffset;
 		}
 	}
-	CurrentAngle = FMath::FixedTurn(CurrentAngle, TargetAngle, TurnSpeed * DeltaSeconds);
+	CurrentAngle = TargetAngle;   
+
+	const int32 NewLane = ((FMath::RoundToInt(TargetAngle / 45.f) % 8) + 8) % 8;
+	if (NewLane != CurrentLane)
+	{
+		CurrentLane = NewLane;
+		if (Track) { Track->SetActiveLane(CurrentLane); }
+	}
 
 	const float Rad = FMath::DegreesToRadians(CurrentAngle);
 	FVector Loc = TrackCenter + FVector(FMath::Cos(Rad), FMath::Sin(Rad), 0.f) * TrackRadius;
 	Loc.Z = GetActorLocation().Z;
 	SetActorLocation(Loc);
 	SetActorRotation(FRotator(0.f, CurrentAngle, 0.f));
+
+	if (ShakeTimeLeft > 0.f)
+	{
+		ShakeTimeLeft = FMath::Max(ShakeTimeLeft - DeltaSeconds, 0.f);
+		const float Alpha = ShakeTimeLeft / FMath::Max(MissShakeDuration, 0.01f);
+		const FVector Jitter(FMath::FRandRange(-1.f, 1.f), FMath::FRandRange(-1.f, 1.f), 0.f);
+		CameraBoom->SetWorldLocation(TrackCenter + Jitter * MissShakeStrength * Alpha);
+	}
 }
 
 void ACyberBeatCharacter::TryAttack(bool bAirAttack)
 {
 	if (bGameEnded) return;
+
 	PlayAttackEffect();
 
 	if (!MusicManager)
@@ -199,38 +218,52 @@ void ACyberBeatCharacter::TryAttack(bool bAirAttack)
 		return;
 	}
 
-	if (SwingSound) { UGameplayStatics::PlaySound2D(this, SwingSound); }
+	const float Now = MusicManager->GetSongTimeSeconds();
 
-
-	// finds the enemy in my lane whose arrival time is closest to now
 	ACyberBeatBasicEnemy* Best = nullptr;
 	float BestDiff = TNumericLimits<float>::Max();
 	for (TActorIterator<ACyberBeatBasicEnemy> It(GetWorld()); It; ++It)
 	{
 		ACyberBeatBasicEnemy* Enemy = *It;
-		
-		if (!Enemy->IsInAttackRange()) continue;   // too far away
-		if (Enemy->RequiresAirAttack() != bAirAttack) continue;   // wrong attack type for this enemy
-
 		const float LaneDelta = FMath::Abs(FMath::FindDeltaAngleDegrees(TargetAngle, Enemy->GetLaneAngleDeg()));
-		if (LaneDelta > 22.5f) continue;   
-		const float Diff = FMath::Abs(MusicManager->GetSongTimeSeconds() - Enemy->GetHitSongTime());
+		if (LaneDelta > 22.5f) continue;
+
+		const float Diff = FMath::Abs(Now - Enemy->GetArrivalSongTime());
 		if (Diff < BestDiff) { BestDiff = Diff; Best = Enemy; }
 	}
 
-	
+	if (SwingSound) { UGameplayStatics::PlaySound2D(this, SwingSound); }
 
-	EBeatTimingResult Result = EBeatTimingResult::Miss;   // no enemy in my lane = whiff
+	EBeatTimingResult Result = EBeatTimingResult::Miss;
 	float OffsetMs = 0.f;
+	FVector FXLocation = Track ? Track->GetLaneHitLocation(CurrentLane) : GetActorLocation();
+
 	if (Best)
 	{
-		Result = MusicManager->JudgeAgainstTime(Best->GetHitSongTime(),OffsetMs);
-
+		Result = MusicManager->JudgeAgainstTime(Best->GetArrivalSongTime(), OffsetMs);
 		if (Result != EBeatTimingResult::Miss)
 		{
+			FXLocation = Best->GetActorLocation();
 			Best->Kill();
 			if (HitSound) { UGameplayStatics::PlaySound2D(this, HitSound); }
 		}
+	}
+
+	// ---- feedback ----
+	if (Track) { Track->PulseLane(CurrentLane, Result); }
+
+	UNiagaraSystem* Burst = (Result == EBeatTimingResult::Perfect) ? PerfectHitEffect.Get()
+	                      : (Result == EBeatTimingResult::Good)    ? GoodHitEffect.Get() : nullptr;
+	if (Burst)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Burst, FXLocation,
+			FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::None);
+	}
+
+	if (Result == EBeatTimingResult::Miss)
+	{
+		if (MissSound) { UGameplayStatics::PlaySound2D(this, MissSound); }
+		ShakeTimeLeft = MissShakeDuration;
 	}
 
 	if (HUDWidget) { HUDWidget->ShowTiming(Result); }

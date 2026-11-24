@@ -4,8 +4,11 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Sound/SoundBase.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
+#include "EngineUtils.h"
 
 ACyberBeatBasicEnemy::ACyberBeatBasicEnemy()
 {
@@ -27,6 +30,15 @@ ACyberBeatBasicEnemy::ACyberBeatBasicEnemy()
     }
 }
 
+void ACyberBeatBasicEnemy::BeginPlay()
+{
+    Super::BeginPlay();
+
+    if (GlowMaterial) { Mesh->SetMaterial(0, GlowMaterial); }
+    MID = Mesh->CreateDynamicMaterialInstance(0);
+    if (MID) { MID->SetVectorParameterValue(TEXT("GlowColor"), GlowColor); }
+}
+
 void ACyberBeatBasicEnemy::Init(ACyberBeatMusicManager* InManager, const FVector& InCenter, float InLaneAngleDeg,
                                 float InSpawnRadius, float InHitRadius, float InArrivalSongTime, float InTravelTime)
 {
@@ -38,82 +50,91 @@ void ACyberBeatBasicEnemy::Init(ACyberBeatMusicManager* InManager, const FVector
     ArrivalSongTime = InArrivalSongTime;
     TravelTime = FMath::Max(InTravelTime, 0.1f);
 
+    const float BPM = IsValid(Manager) ? Manager->GetBPM() : 120.f;
+    StepInterval = (60.f / FMath::Max(BPM, 1.f)) * FMath::Max(BeatsPerMove, 1);
+    BeatMoveDuration = FMath::Min(BeatMoveDuration, StepInterval);
+
+    TotalSteps = FMath::Max(1, FMath::CeilToInt(TravelTime / StepInterval));
+    StepDistance = (SpawnRadius - HitRadius) / TotalSteps;
+
     CurrentRadius = SpawnRadius;
-    StartRadius = SpawnRadius;
-    TargetRadius = SpawnRadius;
-    MoveElapsed = 0.f;
-    BeatsSinceSpawn = 0;
-    bMoving = false;
     bReachedCore = false;
     bInAttackRange = false;
-    bHasReachedHitZone = false;
+
     bHasSwitchedLanes = false;
     bIsSwitchingLanes = false;
     SwitchStartAngle = LaneAngleDeg;
     SwitchTargetAngle = LaneAngleDeg;
     SwitchElapsedTime = 0.f;
 
-
-    if (!IsValid(Manager)) return;
-
-    // Calculate how many beats remain until the hit zone.
-    const float BPM = Manager->GetBPM();
-    const float RemainingTime = FMath::Max(ArrivalSongTime - Manager->GetSongTimeSeconds(),0.0f );
-
-    const float TimeToHit = RemainingTime > 0.f ? RemainingTime: TravelTime;
-
-    const float BeatInterval = 60.f / FMath::Max(BPM, 1.f);
-    BeatsToHitZone = FMath::Max(1,FMath::RoundToInt(TimeToHit / BeatInterval));
-
-    const int32 MovementSteps = FMath::Max(1,FMath::DivideAndRoundUp(BeatsToHitZone, BeatsPerMove));
-
-    // Divide the distance into equal beat based steps.
-    StepDistance = (SpawnRadius - HitRadius) / MovementSteps;
-    LastProcessedBeat = Manager->GetCurrentBeat();
-    Manager->OnBeat.AddDynamic(this, &ACyberBeatBasicEnemy::HandleBeat );
-
     UpdateEnemyPosition();
-
 }
 
 void ACyberBeatBasicEnemy::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    if (!IsValid(Manager)) return;
-
-    // After a fail the song clock reads 0, which would fling enemies back out. Freeze them instead.
-    if (Manager->IsFailed()) return;
-
-    UpdateLaneSwitch(DeltaTime);
-    if (bMoving)
+    GlowCurrent = FMath::FInterpTo(GlowCurrent, GlowTarget, DeltaTime, GlowFadeSpeed);
+    if (MID)
     {
-        MoveElapsed += DeltaTime;
+        MID->SetScalarParameterValue(TEXT("Intensity"), BaseIntensity + GlowCurrent * MaxGlowIntensity);
+    }
 
-        const float Alpha = FMath::Clamp(MoveElapsed / FMath::Max(BeatMoveDuration, 0.01f),0.f,1.f);
+    if (!IsValid(Manager) || Manager->IsFailed()) return;
 
-        CurrentRadius = FMath::Lerp(StartRadius,TargetRadius,Alpha);
+    const float Now = Manager->GetSongTimeSeconds();
+    bInAttackRange = FMath::Abs(Now - ArrivalSongTime) <= AttackRangeSeconds;
 
-        if (Alpha >= 1.f)
+    // ---- lane switch (partner's feature), now triggered by the song clock ----
+    UpdateLaneSwitch(DeltaTime);
+
+    if (bCanSwitchLanes && !bHasSwitchedLanes && !bIsSwitchingLanes)
+    {
+        const float TotalDistance = SpawnRadius - HitRadius;
+        if (TotalDistance > 0.f)
         {
-            bMoving = false;
-            CurrentRadius = TargetRadius;
+            const float Progress = (SpawnRadius - CurrentRadius) / TotalDistance;
+            const float TimeRemaining = ArrivalSongTime - Now;
 
-            if (!bHasReachedHitZone && CurrentRadius <= HitRadius + 0.1f)
+            // Only switch if it will finish well before the enemy lands on the red line.
+            if (Progress >= LaneSwitchProgress && TimeRemaining > LaneSwitchDuration + 0.1f)
             {
-                bHasReachedHitZone = true;
-                bInAttackRange = true;
-            }
-
-            if (CurrentRadius <= CoreRadius)
-            {
-                ReachCore();
-                return;
+                StartLaneSwitch();
             }
         }
     }
 
-   
+    // ---- hopping, driven by the song clock ----
+    // Steps left until the red line, as a continuous number. 0 = exactly on the line at the chart time.
+    const float U = (ArrivalSongTime - Now) / StepInterval;
+    const int32 Level = FMath::CeilToInt(U);
+    const float TimeToNextLevel = (U - (Level - 1)) * StepInterval;
+
+    float Effective = static_cast<float>(Level);
+    if (TimeToNextLevel < BeatMoveDuration)
+    {
+        const float A = 1.f - TimeToNextLevel / BeatMoveDuration;
+        Effective -= FMath::InterpEaseOut(0.f, 1.f, A, 2.f);
+
+        if (Level != LastHopLevel)
+        {
+            LastHopLevel = Level;
+            // Only the nearest few enemies make noise, otherwise dense charts turn to mush.
+            if (MoveSound && GlowTarget > 0.f)
+            {
+                UGameplayStatics::PlaySoundAtLocation(this, MoveSound, GetActorLocation(), MoveSoundVolume);
+            }
+        }
+    }
+
+    CurrentRadius = FMath::Min(HitRadius + Effective * StepDistance, SpawnRadius);
+
+    if (CurrentRadius <= CoreRadius)
+    {
+        ReachCore();
+        return;
+    }
+
     UpdateEnemyPosition();
 }
 
@@ -124,6 +145,9 @@ void ACyberBeatBasicEnemy::Kill()
 
 void ACyberBeatBasicEnemy::ReachCore()
 {
+    if (bReachedCore) return;
+    bReachedCore = true;
+
     UE_LOG(LogTemp, Warning, TEXT("%s reached the core (damage %d)"), *GetName(), Damage);
 
     if (ACyberBeatCore* Core = Cast<ACyberBeatCore>(
@@ -132,74 +156,6 @@ void ACyberBeatBasicEnemy::ReachCore()
         Core->ApplyDamage(Damage);
     }
     Destroy();
-}
-
-void ACyberBeatBasicEnemy::HandleBeat(int32 BeatNumber)
-{
-    if (!IsValid(Manager) || Manager->IsFailed()) return;
-    if (BeatNumber <= LastProcessedBeat) return;
-
-    LastProcessedBeat = BeatNumber;
-
-    BeatsSinceSpawn++;
-
-    if (BeatsSinceSpawn < BeatsPerMove) return;
-
-    BeatsSinceSpawn = 0;
-
-
-    if (bMoving) return;
-
-    if (bCanSwitchLanes &&!bHasSwitchedLanes &&!bHasReachedHitZone &&!bInAttackRange)
-    {
-
-        const float TotalDistance = SpawnRadius - HitRadius;
-
-        if (TotalDistance > 0.f)
-        {
-            const float Progress =
-                (SpawnRadius - CurrentRadius) / TotalDistance;
-
-            const float TimeRemaining =
-                GetHitSongTime() - Manager->GetSongTimeSeconds();
-
-            if (Progress >= LaneSwitchProgress &&
-                CurrentRadius - StepDistance > HitRadius + 0.1f &&
-                TimeRemaining > LaneSwitchDuration)
-            {
-                StartLaneSwitch();
-            }
-        }
-    }
-
-
-    // If the enemy was waiting at the red line, it now moves in.
-    if (bInAttackRange)
-    {
-        bInAttackRange = false;
-    }
-
-    StartRadius = CurrentRadius;
-
-    if (!bHasReachedHitZone)
-    {
-        // Approach the red line, but dont pass it
-        TargetRadius = FMath::Max(HitRadius,CurrentRadius - StepDistance);
-
-        if (TargetRadius <= HitRadius + 0.1f)
-        {
-            bInAttackRange = true;
-        }
-
-    }
-    else
-    {
-        // After the attack window, continue toward the core.
-        TargetRadius = FMath::Max(CoreRadius,CurrentRadius - StepDistance);
-    }
-
-    MoveElapsed = 0.f;
-    bMoving = true;
 }
 
 void ACyberBeatBasicEnemy::UpdateEnemyPosition()
@@ -211,14 +167,8 @@ void ACyberBeatBasicEnemy::UpdateEnemyPosition()
 
 void ACyberBeatBasicEnemy::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    if (IsValid(Manager))
-    {
-        Manager->OnBeat.RemoveDynamic( this,&ACyberBeatBasicEnemy::HandleBeat );
-    }
-
     Super::EndPlay(EndPlayReason);
 }
-
 
 bool ACyberBeatBasicEnemy::IsInAttackRange() const
 {
@@ -227,18 +177,14 @@ bool ACyberBeatBasicEnemy::IsInAttackRange() const
 
 void ACyberBeatBasicEnemy::StartLaneSwitch()
 {
-    if (!bCanSwitchLanes || bHasSwitchedLanes)
-        return;
+    if (!bCanSwitchLanes || bHasSwitchedLanes) return;
 
     bHasSwitchedLanes = true;
     bIsSwitchingLanes = true;
 
     SwitchStartAngle = LaneAngleDeg;
-
     const float Direction = FMath::RandBool() ? 1.f : -1.f;
-
     SwitchTargetAngle = SwitchStartAngle + Direction * 45.f;
-
     SwitchElapsedTime = 0.f;
 }
 
@@ -247,10 +193,9 @@ void ACyberBeatBasicEnemy::UpdateLaneSwitch(float DeltaTime)
     if (!bIsSwitchingLanes) return;
 
     SwitchElapsedTime += DeltaTime;
+    const float Alpha = FMath::Clamp(SwitchElapsedTime / FMath::Max(LaneSwitchDuration, 0.01f), 0.f, 1.f);
 
-    const float Alpha = FMath::Clamp(SwitchElapsedTime / FMath::Max(LaneSwitchDuration, 0.01f),0.f,1.f);
-
-    LaneAngleDeg = FMath::Lerp(SwitchStartAngle,SwitchTargetAngle,Alpha);
+    LaneAngleDeg = FMath::Lerp(SwitchStartAngle, SwitchTargetAngle, Alpha);
 
     if (Alpha >= 1.f)
     {

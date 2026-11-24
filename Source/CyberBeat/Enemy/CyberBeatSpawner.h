@@ -86,4 +86,14 @@ protected:
     TArray<int32> LanePattern;
 
     int32 PatternIndex = 0;
+
+    void UpdateEnemyGlow();
+
+    /** Glow for the soonest, 2nd soonest and 3rd soonest enemy. All others get 0. */
+    UPROPERTY(EditAnywhere, Category = "Glow")
+    TArray<float> GlowLevels = { 1.f, 0.55f, 0.25f };
+
+    /** An enemy just past its hit time still counts as "next" for this long. */
+    UPROPERTY(EditAnywhere, Category = "Glow", meta = (Units = "s"))
+    float GlowGraceSeconds = 0.15f;
 };

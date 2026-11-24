@@ -13,6 +13,7 @@ class UCameraComponent;
 class USpringArmComponent;
 class ACyberBeatMusicManager;
 class USoundBase;
+class ACyberBeatTrack;
 
 UCLASS(abstract)
 class ACyberBeatCharacter : public ACharacter
@@ -91,6 +92,28 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Audio")
 	TObjectPtr<USoundBase> HitSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Audio")
+	TObjectPtr<USoundBase> MissSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Feedback")
+	TObjectPtr<UNiagaraSystem> PerfectHitEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Feedback")
+	TObjectPtr<UNiagaraSystem> GoodHitEffect;
+
+	/** Camera shake on a miss, in cm. Tune up if you can't see it. */
+	UPROPERTY(EditDefaultsOnly, Category = "Feedback", meta = (ClampMin = "0.0"))
+	float MissShakeStrength = 40.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Feedback", meta = (ClampMin = "0.05", Units = "s"))
+	float MissShakeDuration = 0.25f;
+
+	UPROPERTY()
+	TObjectPtr<ACyberBeatTrack> Track;
+
+	int32 CurrentLane = -1;
+	float ShakeTimeLeft = 0.f;
 
 private:
 
