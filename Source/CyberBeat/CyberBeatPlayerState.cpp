@@ -45,3 +45,15 @@ float ACyberBeatPlayerState::GetAccuracyPercent() const
     const int32 Total = PerfectCount + GoodCount + MissCount;
     return Total > 0 ? 100.f * (PerfectCount + GoodCount) / Total : 0.f;
 }
+
+void ACyberBeatPlayerState::ResetScore()
+{
+    TotalScore = 0;
+    Combo = 0;
+    BestCombo = 0;
+    PerfectCount = 0;
+    GoodCount = 0;
+    MissCount = 0;
+
+    OnScoreUpdated.Broadcast(TotalScore, Combo, BestCombo);
+}
