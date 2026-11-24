@@ -9,6 +9,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
+#include "Enemy/CyberBeatBeam.h"
 
 ACyberBeatBasicEnemy::ACyberBeatBasicEnemy()
 {
@@ -140,7 +141,39 @@ void ACyberBeatBasicEnemy::Tick(float DeltaTime)
 
 void ACyberBeatBasicEnemy::Kill()
 {
+    if (bIsPowerup) { Detonate(); }
     Destroy();
+}
+
+void ACyberBeatBasicEnemy::MakePowerup()
+{
+    bIsPowerup = true;
+    Mesh->SetRelativeScale3D(Mesh->GetRelativeScale3D() * PowerupScale);
+    if (MID) { MID->SetVectorParameterValue(TEXT("RimColor"), RimColor); }
+}
+
+void ACyberBeatBasicEnemy::Detonate()
+{
+    bIsPowerup = false;   // guard against double detonation
+
+    TArray<ACyberBeatBasicEnemy*> Victims;
+    for (TActorIterator<ACyberBeatBasicEnemy> It(GetWorld()); It; ++It)
+    {
+        ACyberBeatBasicEnemy* Other = *It;
+        if (Other == this) continue;
+        const float Delta = FMath::Abs(FMath::FindDeltaAngleDegrees(LaneAngleDeg, Other->GetLaneAngleDeg()));
+        if (Delta < 22.5f || Delta > 157.5f) { Victims.Add(Other); }   // same lane or the opposite one
+    }
+    for (ACyberBeatBasicEnemy* V : Victims)
+    {
+        if (IsValid(V)) { V->Destroy(); }   // Destroy, not Kill, so powerups don't chain
+    }
+
+    if (ACyberBeatBeam* Beam = GetWorld()->SpawnActor<ACyberBeatBeam>(Center, FRotator::ZeroRotator))
+    {
+        Beam->Init(Center, LaneAngleDeg, SpawnRadius * 2.f, BeamWidth, BeamMaterial, BeamColor, BeamDuration);
+    }
+    if (BlastSound) { UGameplayStatics::PlaySound2D(this, BlastSound); }
 }
 
 void ACyberBeatBasicEnemy::ReachCore()

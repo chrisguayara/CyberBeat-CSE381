@@ -22,6 +22,7 @@ protected:
     virtual void BeginPlay() override;
 
     void SpawnForEvent(float EventTime, int32 EventLane);
+    void UpdateEnemyGlow();
 
     UPROPERTY(EditAnywhere, Category = "Spawning")
     TSubclassOf<ACyberBeatBasicEnemy> EnemyClass;
@@ -37,7 +38,7 @@ protected:
     TSubclassOf<ACyberBeatBasicEnemy> SwitchingEnemyClass;
 
     /** Chance that a spawn is a switching enemy. */
-    UPROPERTY(EditAnywhere, Category = "Spawning",meta = (ClampMin = "0.0", ClampMax = "1.0"))
+    UPROPERTY(EditAnywhere, Category = "Spawning", meta = (ClampMin = "0.0", ClampMax = "1.0"))
     float SwitchingChance = 0.2f;
 
     /** How far from the center enemies appear. Must be larger than the track radius. */
@@ -72,22 +73,17 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Spawning")
     float LaneAngleOffset = 0.f;
 
-    UPROPERTY()
-    TObjectPtr<ACyberBeatMusicManager> Manager;
-
-    FVector Center = FVector::ZeroVector;
-    float HitRadius = 500.f;
-    int32 NextEventIndex = 0;
-    FRandomStream Stream;
-    FRandomStream FlyStream;
-    FRandomStream SwitchStream;
-
     UPROPERTY(EditAnywhere, Category = "Spawning")
     TArray<int32> LanePattern;
 
-    int32 PatternIndex = 0;
+    // NEW: exploding variant, applied on top of any enemy type
+    /** Every Nth spawn becomes an exploding enemy. */
+    UPROPERTY(EditAnywhere, Category = "Powerup", meta = (ClampMin = "2"))
+    int32 PowerupInterval = 30;
 
-    void UpdateEnemyGlow();
+    /** Hard cap per song. */
+    UPROPERTY(EditAnywhere, Category = "Powerup", meta = (ClampMin = "0"))
+    int32 MaxPowerups = 4;
 
     /** Glow for the soonest, 2nd soonest and 3rd soonest enemy. All others get 0. */
     UPROPERTY(EditAnywhere, Category = "Glow")
@@ -96,4 +92,19 @@ protected:
     /** An enemy just past its hit time still counts as "next" for this long. */
     UPROPERTY(EditAnywhere, Category = "Glow", meta = (Units = "s"))
     float GlowGraceSeconds = 0.15f;
+
+    UPROPERTY()
+    TObjectPtr<ACyberBeatMusicManager> Manager;
+
+    FVector Center = FVector::ZeroVector;
+    float HitRadius = 500.f;
+    int32 NextEventIndex = 0;
+    int32 PatternIndex = 0;
+    FRandomStream Stream;
+    FRandomStream FlyStream;
+    FRandomStream SwitchStream;
+
+    
+    int32 SpawnCount = 0;
+    int32 PowerupsSpawned = 0;
 };

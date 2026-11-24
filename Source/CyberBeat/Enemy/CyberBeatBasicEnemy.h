@@ -54,6 +54,9 @@ public:
     virtual void BeginPlay() override;
     void SetGlowTarget(float InTarget) { GlowTarget = InTarget; }
 
+    void MakePowerup();
+    bool IsPowerup() const { return bIsPowerup; }
+
    
  
 
@@ -176,5 +179,20 @@ protected:
     float StepInterval = 0.5f;
     int32 TotalSteps = 1;
     int32 LastHopLevel = INT32_MAX;
+
+    void Detonate();
+
+    bool bIsPowerup = false;
+    float PowerupTime = 0.f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Powerup") TObjectPtr<USoundBase> BlastSound;
+    UPROPERTY(EditDefaultsOnly, Category = "Powerup") TObjectPtr<UMaterialInterface> BeamMaterial; // M_Glow instance
+    UPROPERTY(EditDefaultsOnly, Category = "Powerup") FLinearColor BeamColor = FLinearColor(0.3f, 0.9f, 1.f);
+    UPROPERTY(EditDefaultsOnly, Category = "Powerup") float BeamWidth = 80.f;
+    UPROPERTY(EditDefaultsOnly, Category = "Powerup") float BeamDuration = 0.35f;
+    UPROPERTY(EditDefaultsOnly, Category = "Powerup") FLinearColor RimColor = FLinearColor(1.f, 0.85f, 0.2f);
+    UPROPERTY(EditDefaultsOnly, Category = "Powerup") float RimMax = 3.f;
+    UPROPERTY(EditDefaultsOnly, Category = "Powerup") float RimPulseSpeed = 2.f;   // pulses per second
+    UPROPERTY(EditDefaultsOnly, Category = "Powerup") float PowerupScale = 1.25f;
 
 };

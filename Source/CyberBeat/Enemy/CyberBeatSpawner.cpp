@@ -4,7 +4,6 @@
 #include "CyberBeatTrack.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
-
 #include "EngineUtils.h"
 
 ACyberBeatSpawner::ACyberBeatSpawner()
@@ -24,7 +23,6 @@ void ACyberBeatSpawner::BeginPlay()
         UE_LOG(LogTemp, Error, TEXT("CyberBeatSpawner: no music manager in the level, nothing will spawn"));
     }
 
-    // Take the center and the hit radius from the track so everything agrees.
     const ACyberBeatTrack* Track = Cast<ACyberBeatTrack>(
         UGameplayStatics::GetActorOfClass(GetWorld(), ACyberBeatTrack::StaticClass()));
     if (Track)
@@ -46,6 +44,8 @@ void ACyberBeatSpawner::BeginPlay()
 
     PatternIndex = 0;
     NextEventIndex = 0;
+    SpawnCount = 0;          // NEW
+    PowerupsSpawned = 0;     // NEW
 }
 
 void ACyberBeatSpawner::Tick(float DeltaTime)
@@ -67,14 +67,12 @@ void ACyberBeatSpawner::Tick(float DeltaTime)
             continue;
         }
 
-        // Events too early in the song cannot be spawned far enough out, so skip them.
         if (bSkipEarlyEvents && Event.TimeSeconds < TravelTime)
         {
             ++NextEventIndex;
             continue;
         }
 
-        // Not time to spawn this one yet. Events are sorted, so nothing later is due either.
         if (Event.TimeSeconds - TravelTime > Now)
         {
             break;
@@ -99,7 +97,7 @@ void ACyberBeatSpawner::SpawnForEvent(float EventTime, int32 EventLane)
     int32 Lane;
     if (EventLane >= 0)
     {
-        Lane = EventLane % ACyberBeatTrack::NumLanes;   // lane from the chart
+        Lane = EventLane % ACyberBeatTrack::NumLanes;
     }
     else if (LanePattern.Num() > 0)
     {
@@ -113,9 +111,7 @@ void ACyberBeatSpawner::SpawnForEvent(float EventTime, int32 EventLane)
 
     TSubclassOf<ACyberBeatBasicEnemy> ClassToSpawn = EnemyClass;
     const float FlyProbability = FlyingEnemyClass ? FMath::Clamp(FlyingChance, 0.f, 1.f) : 0.f;
-
     const float SwitchProbability = SwitchingEnemyClass ? FMath::Clamp(SwitchingChance, 0.f, 1.f - FlyProbability) : 0.f;
-
     const float Roll = SwitchStream.FRand();
 
     if (FlyingEnemyClass && Roll < FlyProbability)
@@ -126,6 +122,11 @@ void ACyberBeatSpawner::SpawnForEvent(float EventTime, int32 EventLane)
     {
         ClassToSpawn = SwitchingEnemyClass;
     }
+
+    // NEW: decide if this spawn is an exploding variant
+    ++SpawnCount;
+    const bool bMakePowerup = PowerupsSpawned < MaxPowerups
+                           && SpawnCount % FMath::Max(PowerupInterval, 2) == 0;
 
     const float AngleDeg = Lane * 45.f + LaneAngleOffset;
     const float Rad = FMath::DegreesToRadians(AngleDeg);
@@ -139,6 +140,13 @@ void ACyberBeatSpawner::SpawnForEvent(float EventTime, int32 EventLane)
         ClassToSpawn, SpawnLocation, FRotator(0.f, AngleDeg + 180.f, 0.f), Params))
     {
         Enemy->Init(Manager, Center, AngleDeg, SpawnRadius, HitRadius, EventTime, TravelTime);
+
+        // NEW
+        if (bMakePowerup)
+        {
+            Enemy->MakePowerup();
+            ++PowerupsSpawned;
+        }
     }
 }
 
@@ -163,4 +171,3 @@ void ACyberBeatSpawner::UpdateEnemyGlow()
         Live[i]->SetGlowTarget(GlowLevels.IsValidIndex(i) ? GlowLevels[i] : 0.f);
     }
 }
-
