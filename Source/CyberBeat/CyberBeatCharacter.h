@@ -159,4 +159,5 @@ public:
 
 	void TryAttack(bool bAirAttack = false);
 	void PlayAttackEffect();
+	bool CanPause() const { return !bGameEnded && !bCountingDown; }
 };

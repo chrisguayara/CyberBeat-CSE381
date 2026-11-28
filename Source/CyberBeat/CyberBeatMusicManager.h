@@ -50,6 +50,12 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Music Manager")
     EBeatTimingResult JudgeInput(float& TimingOffset) const;
 
+    UFUNCTION(BlueprintCallable, Category = "Music Manager")
+    void PauseMusic();
+
+    UFUNCTION(BlueprintCallable, Category = "Music Manager")
+    void ResumeMusic();
+
     UFUNCTION(BlueprintPure, Category = "Music Manager")
     bool GetMusicIndicatorData(
         float& TimeUntilNextEvent,float& TimeSinceLastEvent,float& EventInterval,

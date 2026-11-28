@@ -14,20 +14,18 @@
 #include "Engine/LocalPlayer.h"
 #include "CyberBeat.h"
 #include "CyberBeatLevelSelectWidget.h"
+#include "CyberBeatPauseMenu.h"
+#include "CyberBeatMusicManager.h"
+#include "Kismet/GameplayStatics.h"
+#include "EngineUtils.h"
 
 ACyberBeatPlayerController::ACyberBeatPlayerController()
 {
-	bIsTouch = false;
-	bMoveToMouseCursor = false;
-
-	// create the path following comp
-	PathFollowingComponent = CreateDefaultSubobject<UPathFollowingComponent>(TEXT("Path Following Component"));
-
+	
 	// configure the controller
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
-	CachedDestination = FVector::ZeroVector;
-	FollowTime = 0.f;
+	
 }
 
 void ACyberBeatPlayerController::BeginPlay()
@@ -89,6 +87,12 @@ void ACyberBeatPlayerController::SetupInputComponent()
 		// Set up action bindings
 		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
 		{
+
+			if (PauseAction)
+			{
+				EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Started, this, &ACyberBeatPlayerController::TogglePause);
+			}
+
 		}
 		else
 		{
@@ -97,74 +101,46 @@ void ACyberBeatPlayerController::SetupInputComponent()
 	}
 }
 
-void ACyberBeatPlayerController::OnInputStarted()
-{
-	StopMovement();
 
-	// Update the move destination to wherever the cursor is pointing at
-	UpdateCachedDestination();
-}
 
-void ACyberBeatPlayerController::OnSetDestinationTriggered()
+void ACyberBeatPlayerController::TogglePause()
 {
-	// We flag that the input is being pressed
-	FollowTime += GetWorld()->GetDeltaSeconds();
+
+	if (GetWorld()->GetMapName().Contains(TEXT("MainMenu"))) return;
+
 	
-	// Update the move destination to wherever the cursor is pointing at
-	UpdateCachedDestination();
-	
-	// Move towards mouse pointer or touch
-	APawn* ControlledPawn = GetPawn();
-	if (ControlledPawn != nullptr)
+	if (PauseMenu && PauseMenu->IsInViewport())
 	{
-		FVector WorldDirection = (CachedDestination - ControlledPawn->GetActorLocation()).GetSafeNormal();
-		ControlledPawn->AddMovementInput(WorldDirection, 1.0, false);
-	}
-}
-
-void ACyberBeatPlayerController::OnSetDestinationReleased()
-{
-	// If it was a short press
-	if (FollowTime <= ShortPressThreshold)
-	{
-		// We move there and spawn some particles
-		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, CachedDestination);
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, FXCursor, CachedDestination, FRotator::ZeroRotator, FVector(1.f, 1.f, 1.f), true, true, ENCPoolMethod::None, true);
+		PauseMenu->Resume();
+		return;
 	}
 
-	FollowTime = 0.f;
-}
-
-// Triggered every frame when the input is held down
-void ACyberBeatPlayerController::OnTouchTriggered()
-{
-	bIsTouch = true;
-	OnSetDestinationTriggered();
-}
-
-void ACyberBeatPlayerController::OnTouchReleased()
-{
-	bIsTouch = false;
-	OnSetDestinationReleased();
-}
-
-void ACyberBeatPlayerController::UpdateCachedDestination()
-{
-	// We look for the location in the world where the player has pressed the input
-	FHitResult Hit;
-	bool bHitSuccessful = false;
-	if (bIsTouch)
+	if (const ACyberBeatCharacter* Char = Cast<ACyberBeatCharacter>(GetPawn()))
 	{
-		bHitSuccessful = GetHitResultUnderFinger(ETouchIndex::Touch1, ECollisionChannel::ECC_Visibility, true, Hit);
-	}
-	else
-	{
-		bHitSuccessful = GetHitResultUnderCursor(ECollisionChannel::ECC_Visibility, true, Hit);
+		if (!Char->CanPause()) return;
 	}
 
-	// If we hit a surface, cache the location
-	if (bHitSuccessful)
+
+	for (TActorIterator<ACyberBeatMusicManager> It(GetWorld()); It; ++It)
 	{
-		CachedDestination = Hit.Location;
+		if (It->IsFailed()) return;
 	}
+
+	if (!PauseMenuClass) return;
+
+	for (TActorIterator<ACyberBeatMusicManager> It(GetWorld()); It; ++It)
+	{
+		It->PauseMusic();
+	}
+	UGameplayStatics::SetGamePaused(this, true);
+
+	PauseMenu = CreateWidget<UCyberBeatPauseMenu>(this, PauseMenuClass);
+	PauseMenu->AddToViewport();
+
+	FInputModeGameAndUI InputMode;
+	InputMode.SetWidgetToFocus(PauseMenu->TakeWidget());
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
+	bShowMouseCursor = true;
 }
+

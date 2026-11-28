@@ -6,6 +6,7 @@
 #include "Quartz/QuartzSubsystem.h"
 #include "Quartz/AudioMixerClockHandle.h"
 
+
 ACyberBeatMusicManager::ACyberBeatMusicManager()
 {
     PrimaryActorTick.bCanEverTick = true;
@@ -307,3 +308,25 @@ void ACyberBeatMusicManager::StartSong()
     MusicStartTime = GetWorld()->GetTimeSeconds();
     MusicComponent->Play();
 }
+
+void ACyberBeatMusicManager::PauseMusic()
+{
+    if (MusicComponent) MusicComponent->SetPaused(true);
+    if (ClockHandle)
+    {
+        UQuartzClockHandle* Handle = ClockHandle;
+        Handle->PauseClock(this, Handle);
+    }
+}
+
+void ACyberBeatMusicManager::ResumeMusic()
+{
+    if (MusicComponent) MusicComponent->SetPaused(false);
+    if (ClockHandle)
+    {
+        UQuartzClockHandle* Handle = ClockHandle;
+        Handle->ResumeClock(this, Handle);
+    }
+}
+
+
